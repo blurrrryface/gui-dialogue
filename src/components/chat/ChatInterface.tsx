@@ -109,7 +109,12 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
           for (const line of lines) {
             if (line.startsWith('data: ')) {
               try {
-                const data = JSON.parse(line.slice(6));
+                // Handle double "data: " prefix from backend
+                let jsonStr = line.slice(6);
+                if (jsonStr.startsWith('data: ')) {
+                  jsonStr = jsonStr.slice(6);
+                }
+                const data = JSON.parse(jsonStr);
                 
                 if (data.type === 'content') {
                   fullContent += data.delta || '';
