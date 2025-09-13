@@ -1,0 +1,130 @@
+/* Assistant UI theme integration with our chat design system */
+@import "@assistant-ui/react/styles/index.css";
+
+.aui-root {
+  @apply h-full flex flex-col;
+}
+
+.aui-thread-root {
+  @apply h-full;
+}
+
+.aui-thread-viewport {
+  @apply flex-1 overflow-y-auto;
+}
+
+.aui-thread-viewport-spacer {
+  @apply h-4;
+}
+
+.aui-thread-viewport-footer {
+  @apply sticky bottom-0 bg-background border-t border-border p-4 space-y-4;
+}
+
+.aui-thread-scroll-to-bottom {
+  @apply mb-2;
+}
+
+.aui-composer-root {
+  @apply flex items-end gap-2 bg-card rounded-lg border border-border p-3;
+}
+
+.aui-composer-input {
+  @apply flex-1 bg-transparent border-0 outline-none resize-none text-sm placeholder:text-muted-foreground max-h-32;
+}
+
+.aui-composer-send {
+  @apply bg-primary hover:bg-primary/90 text-primary-foreground;
+}
+
+.aui-composer-cancel {
+  @apply border-destructive text-destructive hover:bg-destructive/10;
+}
+
+.aui-user-message-root {
+  @apply flex justify-end p-4 gap-3;
+}
+
+.aui-user-message-content {
+  @apply bg-chat-bubble-user text-chat-bubble-user-foreground rounded-2xl px-4 py-3 max-w-3xl;
+}
+
+.aui-assistant-message-root {
+  @apply flex justify-start p-4 gap-3;
+}
+
+.aui-assistant-message-content {
+  @apply bg-chat-bubble-assistant text-chat-bubble-assistant-foreground rounded-2xl px-4 py-3 max-w-3xl;
+}
+
+.aui-user-action-bar-root,
+.aui-assistant-action-bar-root {
+  @apply flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity;
+}
+
+.aui-user-branch-picker {
+  @apply mt-2;
+}
+
+/* Tool call specific styling */
+.aui-tool-call {
+  @apply chat-tool-call border rounded-md p-3 my-2;
+}
+
+.aui-tool-result {
+  @apply chat-tool-result border rounded-md p-3;
+}
+
+/* Welcome message styling */
+.aui-thread-welcome-root {
+  @apply flex items-center justify-center min-h-64 p-8;
+}
+
+.aui-thread-welcome-center {
+  @apply text-center space-y-4;
+}
+
+.aui-thread-welcome-message {
+  @apply text-lg font-medium;
+}
+
+.aui-thread-welcome-suggestions {
+  @apply flex flex-wrap gap-2 justify-center mt-4;
+}
+
+.aui-thread-welcome-suggestion {
+  @apply bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-lg px-3 py-2 text-sm cursor-pointer transition-colors;
+}
+
+.aui-thread-welcome-suggestion-text {
+  @apply block;
+}
+
+/* Messages styling */
+.aui-message-content {
+  @apply prose prose-sm dark:prose-invert max-w-none;
+}
+
+.aui-message-content p {
+  @apply mb-2 last:mb-0;
+}
+
+.aui-message-content code {
+  @apply bg-muted px-1 py-0.5 rounded text-xs;
+}
+
+.aui-message-content pre {
+  @apply bg-muted p-3 rounded-md overflow-x-auto;
+}
+
+.aui-message-content ul {
+  @apply list-disc pl-4 mb-2;
+}
+
+.aui-message-content ol {
+  @apply list-decimal pl-4 mb-2;
+}
+
+.aui-message-content li {
+  @apply mb-1;
+}

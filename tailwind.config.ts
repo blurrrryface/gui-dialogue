@@ -22,6 +22,7 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          glow: "hsl(var(--primary-glow))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -47,6 +48,15 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        "chat-bubble-user": "hsl(var(--chat-bubble-user))",
+        "chat-bubble-user-foreground": "hsl(var(--chat-bubble-user-foreground))",
+        "chat-bubble-assistant": "hsl(var(--chat-bubble-assistant))",
+        "chat-bubble-assistant-foreground": "hsl(var(--chat-bubble-assistant-foreground))",
+        "chat-tool-call": "hsl(var(--chat-tool-call))",
+        "chat-tool-result": "hsl(var(--chat-tool-result))",
+        "sidebar-background": "hsl(var(--sidebar-background))",
+        "sidebar-hover": "hsl(var(--sidebar-hover))",
+        "sidebar-active": "hsl(var(--sidebar-active))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
@@ -57,6 +67,10 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+      },
+      backgroundImage: {
+        "gradient-primary": "var(--gradient-primary)",
+        "gradient-card": "var(--gradient-card)",
       },
       borderRadius: {
         lg: "var(--radius)",
