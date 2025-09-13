@@ -111,10 +111,10 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
               try {
                 const data = JSON.parse(line.slice(6));
                 
-                if (data.type === 'content') {
-                  fullContent += data.delta || '';
+                if (data.type === 'content' && data.content) {
+                  fullContent += data.content;
                   onStreamUpdate(fullContent);
-                } else if (data.type === 'tool_call') {
+                } else if (data.type === 'tool_call' || data.toolCall) {
                   toolCalls.push({
                     id: data.id || `tool_${Date.now()}`,
                     name: data.name || 'unknown_tool',
