@@ -56,7 +56,9 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({}),
+        body: JSON.stringify({
+          graph_id: 'langgraph-app',
+        }),
       });
 
       if (!response.ok) {
@@ -64,7 +66,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
       }
 
       const data = await response.json();
-      return data.thread_id || data.id || 'default';
+      return data.thread.id || data.id || 'default';
     } catch (error) {
       console.error('Error creating thread:', error);
       return 'default';
@@ -85,6 +87,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
         },
         body: JSON.stringify({
           message,
+          thread_id: threadId,
           stream: true,
         }),
       });
