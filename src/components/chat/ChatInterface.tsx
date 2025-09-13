@@ -285,19 +285,8 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                 )}
 
                 <div className="max-w-3xl space-y-2">
-                  <div
-                    className={cn(
-                      "rounded-2xl px-4 py-3 text-sm",
-                      message.role === 'user'
-                        ? "bg-chat-bubble-user text-chat-bubble-user-foreground ml-auto"
-                        : "bg-chat-bubble-assistant text-chat-bubble-assistant-foreground"
-                    )}
-                  >
-                    <p className="whitespace-pre-wrap">{message.content}</p>
-                  </div>
-
-                  {/* Tool Calls */}
-                  {message.toolCalls && message.toolCalls.length > 0 && (
+                  {/* Tool Calls - Show first for assistant messages */}
+                  {message.role === 'assistant' && message.toolCalls && message.toolCalls.length > 0 && (
                     <div className="space-y-2">
                       {message.toolCalls.map((toolCall) => (
                         <div
@@ -310,25 +299,43 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                           {toolCall.args && Object.keys(toolCall.args).length > 0 && (
                             <div className="text-xs text-muted-foreground mb-2">
                               <strong>Args:</strong>
-                              <pre className="mt-1 text-xs overflow-x-auto">
-                                {JSON.stringify(toolCall.args, null, 2)}
-                              </pre>
+                              <ScrollArea className="mt-1 max-h-32">
+                                <pre className="text-xs overflow-x-auto">
+                                  {JSON.stringify(toolCall.args, null, 2)}
+                                </pre>
+                              </ScrollArea>
                             </div>
                           )}
                           {toolCall.result && (
                             <div className="text-xs">
                               <strong className="text-chat-tool-result">Result:</strong>
                               <div className="mt-1 bg-chat-tool-result/10 p-2 rounded">
-                                <pre className="text-xs text-chat-tool-result overflow-x-auto">
-                                  {typeof toolCall.result === 'string'
-                                    ? toolCall.result
-                                    : JSON.stringify(toolCall.result, null, 2)}
-                                </pre>
+                                <ScrollArea className="max-h-48">
+                                  <pre className="text-xs text-chat-tool-result overflow-x-auto">
+                                    {typeof toolCall.result === 'string'
+                                      ? toolCall.result
+                                      : JSON.stringify(toolCall.result, null, 2)}
+                                  </pre>
+                                </ScrollArea>
                               </div>
                             </div>
                           )}
                         </div>
                       ))}
+                    </div>
+                  )}
+
+                  {/* Message Content - Show after tool calls for assistant */}
+                  {message.content && (
+                    <div
+                      className={cn(
+                        "rounded-2xl px-4 py-3 text-sm",
+                        message.role === 'user'
+                          ? "bg-chat-bubble-user text-chat-bubble-user-foreground ml-auto"
+                          : "bg-chat-bubble-assistant text-chat-bubble-assistant-foreground"
+                      )}
+                    >
+                      <p className="whitespace-pre-wrap">{message.content}</p>
                     </div>
                   )}
 
