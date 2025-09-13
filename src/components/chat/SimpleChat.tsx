@@ -43,16 +43,37 @@ export function SimpleChat({ className }: SimpleChatProps) {
     scrollToBottom();
   }, [messages]);
 
-  const callLangGraphAPI = async (message: string, onStreamUpdate: (content: string) => void): Promise<Message> => {
+  const createThreadIfNeeded = async (): Promise<string> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/chat`, {
+      const response = await fetch(`${API_BASE_URL}/threads`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.thread_id || data.id || 'default';
+    } catch (error) {
+      console.error('Error creating thread:', error);
+      return 'default';
+    }
+  };
+
+  const callLangGraphAPI = async (message: string, threadId: string, onStreamUpdate: (content: string) => void): Promise<Message> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/threads/${threadId}/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           message,
-          thread_id: 'default',
           stream: true,
         }),
       });
@@ -141,7 +162,10 @@ export function SimpleChat({ className }: SimpleChatProps) {
     setIsLoading(true);
 
     try {
-      const finalMessage = await callLangGraphAPI(userMessage.content, (streamedContent) => {
+      // 创建线程ID（实际项目中应该从状态管理获取或创建）
+      const threadId = await createThreadIfNeeded();
+      
+      const finalMessage = await callLangGraphAPI(userMessage.content, threadId, (streamedContent) => {
         setMessages(prev => 
           prev.map(msg => 
             msg.id === assistantMessageId 
