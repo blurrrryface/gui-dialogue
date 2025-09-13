@@ -42,21 +42,12 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   }, [storeThreadId, threads.length, createThread]);
 
   const scrollToBottom = () => {
-    setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   useEffect(() => {
     scrollToBottom();
   }, [currentThread?.messages]);
-
-  // Also scroll when loading state changes or tool calls update
-  useEffect(() => {
-    if (!isLoading) {
-      scrollToBottom();
-    }
-  }, [isLoading]);
 
   const createThreadIfNeeded = async (): Promise<string> => {
     try {
@@ -126,8 +117,6 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                 if (data.type === 'content' && data.content) {
                   fullContent += data.content;
                   onStreamUpdate(fullContent);
-                  // Scroll to bottom after content updates
-                  setTimeout(() => scrollToBottom(), 100);
                 } else if (data.type === 'tool_call' && data.toolCall) {
                   const toolCall = data.toolCall;
                   let args = {};
@@ -168,8 +157,6 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                       content: fullContent,
                       toolCalls: [...toolCalls]
                     });
-                    // Scroll to bottom after tool call updates
-                    setTimeout(() => scrollToBottom(), 200);
                   }
                 }
               } catch (e) {
