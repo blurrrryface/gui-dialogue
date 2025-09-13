@@ -43,7 +43,7 @@ export function SimpleChat({ className }: SimpleChatProps) {
     scrollToBottom();
   }, [messages]);
 
-  const callLangGraphAPI = async (message: string): Promise<Message> => {
+  const callLangGraphAPI = async (message: string, onStreamUpdate: (content: string) => void): Promise<Message> => {
     try {
       const response = await fetch(`${API_BASE_URL}/chat`, {
         method: 'POST',
@@ -53,6 +53,7 @@ export function SimpleChat({ className }: SimpleChatProps) {
         body: JSON.stringify({
           message,
           thread_id: 'default',
+          stream: true,
         }),
       });
 
@@ -60,20 +61,50 @@ export function SimpleChat({ className }: SimpleChatProps) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let fullContent = '';
+      let toolCalls: ToolCall[] = [];
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                
+                if (data.type === 'content') {
+                  fullContent += data.delta || '';
+                  onStreamUpdate(fullContent);
+                } else if (data.type === 'tool_call') {
+                  toolCalls.push({
+                    id: data.id || `tool_${Date.now()}`,
+                    name: data.name || 'unknown_tool',
+                    args: data.args || {},
+                    result: data.result,
+                    status: data.result ? 'completed' : 'pending'
+                  });
+                }
+              } catch (e) {
+                // Skip invalid JSON lines
+              }
+            }
+          }
+        }
+      }
       
       return {
         id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         role: 'assistant',
-        content: data.content || data.message || 'No response from server',
+        content: fullContent || 'No response from server',
         timestamp: Date.now(),
-        toolCalls: data.tool_calls?.map((tc: any) => ({
-          id: tc.id || `tool_${Date.now()}`,
-          name: tc.name || tc.function?.name || 'unknown_tool',
-          args: tc.args || tc.function?.arguments || {},
-          result: tc.result,
-          status: tc.result ? 'completed' : 'pending'
-        })),
+        toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
       };
     } catch (error) {
       console.error('Error calling LangGraph API:', error);
@@ -97,13 +128,37 @@ export function SimpleChat({ className }: SimpleChatProps) {
       timestamp: Date.now(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    const assistantMessageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const initialAssistantMessage: Message = {
+      id: assistantMessageId,
+      role: 'assistant',
+      content: '',
+      timestamp: Date.now(),
+    };
+
+    setMessages(prev => [...prev, userMessage, initialAssistantMessage]);
     setInput('');
     setIsLoading(true);
 
     try {
-      const assistantMessage = await callLangGraphAPI(userMessage.content);
-      setMessages(prev => [...prev, assistantMessage]);
+      const finalMessage = await callLangGraphAPI(userMessage.content, (streamedContent) => {
+        setMessages(prev => 
+          prev.map(msg => 
+            msg.id === assistantMessageId 
+              ? { ...msg, content: streamedContent }
+              : msg
+          )
+        );
+      });
+
+      // Update with final message including tool calls
+      setMessages(prev => 
+        prev.map(msg => 
+          msg.id === assistantMessageId 
+            ? finalMessage
+            : msg
+        )
+      );
     } finally {
       setIsLoading(false);
     }
