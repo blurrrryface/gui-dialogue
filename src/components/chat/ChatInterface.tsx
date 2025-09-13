@@ -117,14 +117,47 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                 if (data.type === 'content' && data.content) {
                   fullContent += data.content;
                   onStreamUpdate(fullContent);
-                } else if (data.type === 'tool_call' || data.toolCall) {
-                  toolCalls.push({
-                    id: data.id || `tool_${Date.now()}`,
-                    name: data.name || 'unknown_tool',
-                    args: data.args || {},
-                    result: data.result,
-                    status: data.result ? 'completed' : 'pending'
-                  });
+                } else if (data.type === 'tool_call' && data.toolCall) {
+                  const toolCall = data.toolCall;
+                  let args = {};
+                  
+                  // Parse args if it's a JSON string
+                  if (typeof toolCall.args === 'string') {
+                    try {
+                      args = JSON.parse(toolCall.args);
+                    } catch (e) {
+                      console.error('Failed to parse tool args:', e);
+                      args = { raw: toolCall.args };
+                    }
+                  } else {
+                    args = toolCall.args || {};
+                  }
+                  
+                  // Find existing tool call or create new one
+                  const existingIndex = toolCalls.findIndex(tc => tc.id === toolCall.id);
+                  const toolCallData = {
+                    id: toolCall.id || `tool_${Date.now()}`,
+                    name: toolCall.name || 'unknown_tool',
+                    args: args,
+                    result: toolCall.result,
+                    status: toolCall.status || (toolCall.result ? 'completed' : 'pending')
+                  };
+                  
+                  if (existingIndex !== -1) {
+                    // Update existing tool call
+                    toolCalls[existingIndex] = toolCallData;
+                  } else {
+                    // Add new tool call
+                    toolCalls.push(toolCallData);
+                  }
+                  
+                  // Update message with current tool calls
+                  if (currentThreadId) {
+                    updateMessage(currentThreadId, messageId, {
+                      content: fullContent,
+                      toolCalls: [...toolCalls]
+                    });
+                  }
                 }
               } catch (e) {
                 // Skip invalid JSON lines
