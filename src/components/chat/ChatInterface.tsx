@@ -114,13 +114,14 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                 if (data.type === 'content' && data.content) {
                   fullContent += data.content;
                   onStreamUpdate(fullContent);
-                } else if (data.type === 'tool_call' || data.toolCall) {
+                } else if (data.type === 'tool_call' && data.toolCall) {
+                  const toolCall = data.toolCall;
                   toolCalls.push({
-                    id: data.id || `tool_${Date.now()}`,
-                    name: data.name || 'unknown_tool',
-                    args: data.args || {},
-                    result: data.result,
-                    status: data.result ? 'completed' : 'pending'
+                    id: toolCall.id || `tool_${Date.now()}`,
+                    name: toolCall.name || 'unknown_tool',
+                    args: typeof toolCall.args === 'string' ? JSON.parse(toolCall.args) : (toolCall.args || {}),
+                    result: toolCall.result,
+                    status: toolCall.status || (toolCall.result ? 'completed' : 'pending')
                   });
                 }
               } catch (e) {
