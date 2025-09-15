@@ -3,10 +3,10 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Send, Loader2, User, Bot, Wifi, WifiOff, ChevronDown, ChevronRight } from 'lucide-react';
+import { Send, Loader2, User, Bot, Wifi, WifiOff, ChevronDown, ChevronRight, Paperclip, X, FileText, Image } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { useChatStore, useCurrentThread, ChatMessage, ToolCall } from '@/store/chatStore';
+import { useChatStore, useCurrentThread, ChatMessage, ToolCall, FileAttachment } from '@/store/chatStore';
 import { getMockResponse, simulateStreamingResponse } from '@/services/mockData';
 
 interface ChatInterfaceProps {
@@ -20,8 +20,10 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [currentThreadId, setCurrentThreadId] = useState<string | null>(null);
   const [isBackendAvailable, setIsBackendAvailable] = useState(true);
+  const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { 
     threads, 
@@ -46,6 +48,54 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // 文件处理函数
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    const newAttachments: FileAttachment[] = Array.from(files).map((file, index) => ({
+      id: `attachment_${Date.now()}_${index}`,
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      file: file
+    }));
+
+    setAttachments(prev => [...prev, ...newAttachments]);
+    
+    // 清空文件输入
+    if (event.target) {
+      event.target.value = '';
+    }
+  };
+
+  const removeAttachment = (attachmentId: string) => {
+    setAttachments(prev => prev.filter(att => att.id !== attachmentId));
+  };
+
+  // 上传文件到服务器
+  const uploadFileToServer = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('File upload failed');
+      }
+
+      const data = await response.json();
+      return data.url; // 假设服务器返回文件URL
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      throw error;
+    }
   };
 
   useEffect(() => {
@@ -198,7 +248,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if ((!input.trim() && attachments.length === 0) || isLoading) return;
 
     const trimmedInput = input.trim();
     setInput('');
@@ -213,11 +263,36 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
         setCurrentThreadId(threadId);
       }
 
-      // 添加用户消息
+      // 上传文件到服务器
+      const uploadedAttachments: FileAttachment[] = [];
+      for (const attachment of attachments) {
+        if (attachment.file) {
+          try {
+            const url = await uploadFileToServer(attachment.file);
+            uploadedAttachments.push({
+              ...attachment,
+              url: url,
+              file: undefined // 清除本地文件引用
+            });
+          } catch (error) {
+            console.error('Error uploading file:', attachment.name, error);
+            // 如果上传失败，仍然保留本地文件
+            uploadedAttachments.push(attachment);
+          }
+        } else {
+          uploadedAttachments.push(attachment);
+        }
+      }
+
+      // 添加用户消息（包含附件）
       addMessage(threadId, {
         role: 'user',
         content: trimmedInput,
+        attachments: uploadedAttachments.length > 0 ? uploadedAttachments : undefined,
       });
+
+      // 清空附件
+      setAttachments([]);
 
       // 添加初始助手消息
       addMessage(threadId, {
@@ -250,6 +325,58 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
       e.preventDefault();
       handleSubmit(e);
     }
+  };
+
+  // 文件附件组件
+  const FileAttachmentItem = ({ attachment, showRemoveButton = false }: { 
+    attachment: FileAttachment; 
+    showRemoveButton?: boolean; 
+  }) => {
+    const isImage = attachment.type.startsWith('image/');
+    const fileSize = (attachment.size / 1024).toFixed(1) + ' KB';
+
+    return (
+      <div className="flex items-center gap-2 p-2 bg-muted rounded-lg relative group">
+        {showRemoveButton && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={() => removeAttachment(attachment.id)}
+          >
+            <X className="w-3 h-3" />
+          </Button>
+        )}
+        
+        <div className="flex-shrink-0">
+          {isImage ? (
+            <div className="w-10 h-10 bg-blue-100 rounded flex items-center justify-center">
+              <Image className="w-5 h-5 text-blue-600" />
+            </div>
+          ) : (
+            <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center">
+              <FileText className="w-5 h-5 text-gray-600" />
+            </div>
+          )}
+        </div>
+        
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium truncate">{attachment.name}</p>
+          <p className="text-xs text-muted-foreground">{fileSize}</p>
+        </div>
+        
+        {attachment.url && !showRemoveButton && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => window.open(attachment.url, '_blank')}
+            className="flex-shrink-0"
+          >
+            下载
+          </Button>
+        )}
+      </div>
+    );
   };
 
   const messages = currentThread?.messages || [];
@@ -368,16 +495,25 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                     )}
 
                     <div className="max-w-3xl space-y-2">
-                      <div
-                        className={cn(
-                          "rounded-2xl px-4 py-3 text-sm",
-                          message.role === 'user'
-                            ? "bg-chat-bubble-user text-chat-bubble-user-foreground ml-auto"
-                            : "bg-chat-bubble-assistant text-chat-bubble-assistant-foreground"
-                        )}
-                      >
-                        <p className="whitespace-pre-wrap">{message.content}</p>
-                      </div>
+                       <div
+                         className={cn(
+                           "rounded-2xl px-4 py-3 text-sm",
+                           message.role === 'user'
+                             ? "bg-chat-bubble-user text-chat-bubble-user-foreground ml-auto"
+                             : "bg-chat-bubble-assistant text-chat-bubble-assistant-foreground"
+                         )}
+                       >
+                         {message.content && <p className="whitespace-pre-wrap">{message.content}</p>}
+                         
+                         {/* 显示附件 */}
+                         {message.attachments && message.attachments.length > 0 && (
+                           <div className={cn("mt-2 space-y-2", message.content && "border-t pt-2")}>
+                             {message.attachments.map((attachment) => (
+                               <FileAttachmentItem key={attachment.id} attachment={attachment} />
+                             ))}
+                           </div>
+                         )}
+                       </div>
 
                       <div
                         className={cn(
@@ -430,29 +566,71 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
 
       {/* Input */}
       <div className="border-t border-border p-4 flex-shrink-0">
-        <form onSubmit={handleSubmit} className="flex gap-2">
-          <Textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type your message..."
-            className="min-h-[60px] max-h-32 resize-none"
-            disabled={isLoading}
-          />
+        {/* 附件预览 */}
+        {attachments.length > 0 && (
+          <div className="mb-3 space-y-2">
+            <div className="text-sm font-medium text-muted-foreground">
+              附件 ({attachments.length})
+            </div>
+            <div className="space-y-2 max-h-32 overflow-y-auto">
+              {attachments.map((attachment) => (
+                <FileAttachmentItem 
+                  key={attachment.id} 
+                  attachment={attachment} 
+                  showRemoveButton={true} 
+                />
+              ))}
+            </div>
+          </div>
+        )}
+        
+        <div className="flex gap-2">
+          {/* 文件上传按钮 */}
           <Button
-            type="submit"
+            type="button"
+            variant="outline"
             size="icon"
-            disabled={!input.trim() || isLoading}
-            className="w-12 h-12 bg-primary hover:bg-primary/90 flex-shrink-0"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isLoading}
+            className="flex-shrink-0"
           >
-            {isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Send className="w-4 h-4" />
-            )}
+            <Paperclip className="w-4 h-4" />
           </Button>
-        </form>
+          
+          {/* 隐藏的文件输入 */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept="*/*"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+          
+          <form onSubmit={handleSubmit} className="flex gap-2 flex-1">
+            <Textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Type your message..."
+              className="min-h-[60px] max-h-32 resize-none flex-1"
+              disabled={isLoading}
+            />
+            <Button
+              type="submit"
+              size="icon"
+              disabled={(!input.trim() && attachments.length === 0) || isLoading}
+              className="w-12 h-12 bg-primary hover:bg-primary/90 flex-shrink-0"
+            >
+              {isLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
+            </Button>
+          </form>
+        </div>
       </div>
     </div>
   );

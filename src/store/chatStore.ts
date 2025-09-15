@@ -6,7 +6,17 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   toolCalls?: ToolCall[];
+  attachments?: FileAttachment[];
   timestamp: number;
+}
+
+export interface FileAttachment {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  url?: string;
+  file?: File;
 }
 
 export interface ToolCall {
