@@ -294,125 +294,141 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
               </div>
             </div>
           ) : (
-            messages.map((message) => (
-              <div
-                key={message.id}
-                className={cn(
-                  "flex gap-3 animate-fade-in",
-                  message.role === 'user' ? "justify-end" : "justify-start"
-                )}
-              >
-                {message.role === 'assistant' && (
-                  <Avatar className="w-8 h-8 bg-secondary">
-                    <AvatarFallback>
-                      <Bot className="w-4 h-4" />
-                    </AvatarFallback>
-                  </Avatar>
-                )}
-
-                <div className="max-w-3xl space-y-2">
-                  {/* Tool Calls - Show first for assistant messages */}
-                  {message.role === 'assistant' && message.toolCalls && message.toolCalls.length > 0 && (
-                    <div className="space-y-2">
-                      {message.toolCalls.map((toolCall) => {
-                        const isCompleted = toolCall.status === 'completed';
-                        return (
-                          <div key={toolCall.id} className="flex gap-3">
-                            <Avatar className="w-8 h-8 bg-chat-tool-call/20 flex-shrink-0">
-                              <AvatarFallback className="bg-chat-tool-call/20 text-chat-tool-call">
-                                🔧
-                              </AvatarFallback>
-                            </Avatar>
-                            
-                            <Collapsible defaultOpen={!isCompleted} className="flex-1 min-w-0">
-                              <div className="bg-chat-tool-call/10 border border-chat-tool-call/20 rounded-lg overflow-hidden">
-                                <CollapsibleTrigger className="w-full p-3 flex items-center justify-between hover:bg-chat-tool-call/5 transition-colors">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-sm font-medium text-chat-tool-call">
-                                      {toolCall.name}
-                                    </span>
-                                    {toolCall.status === 'pending' && (
-                                      <Loader2 className="w-4 h-4 animate-spin text-chat-tool-call" />
-                                    )}
-                                    {toolCall.status === 'completed' && (
-                                      <span className="text-sm text-green-500">✓</span>
-                                    )}
-                                  </div>
-                                  <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform data-[state=closed]:rotate-[-90deg]" />
-                                </CollapsibleTrigger>
-                                
-                                <CollapsibleContent>
-                                  <div className="px-3 pb-3 space-y-2 border-t border-chat-tool-call/10">
-                                    {toolCall.args && Object.keys(toolCall.args).length > 0 && (
-                                      <div className="text-sm text-muted-foreground">
-                                        <strong>Arguments:</strong>
-                                        <ScrollArea className="mt-1 max-h-32">
-                                          <pre className="text-sm overflow-x-auto bg-muted/30 p-2 rounded">
-                                            {JSON.stringify(toolCall.args, null, 2)}
-                                          </pre>
-                                        </ScrollArea>
-                                      </div>
-                                    )}
-                                    {toolCall.result && (
-                                      <div className="text-sm">
-                                        <strong className="text-chat-tool-result">Result:</strong>
-                                        <div className="mt-1 bg-chat-tool-result/10 p-2 rounded">
-                                          <ScrollArea className="max-h-48">
-                                            <pre className="text-sm text-chat-tool-result overflow-x-auto">
-                                              {typeof toolCall.result === 'string'
-                                                ? toolCall.result
-                                                : JSON.stringify(toolCall.result, null, 2)}
-                                            </pre>
-                                          </ScrollArea>
-                                        </div>
-                                      </div>
-                                    )}
-                                  </div>
-                                </CollapsibleContent>
-                              </div>
-                            </Collapsible>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {/* Message Content - Show after tool calls for assistant */}
-                  {message.content && (
+            messages.map((message) => {
+              const messageItems = [];
+              
+              // First render tool calls as separate items (if assistant message)
+              if (message.role === 'assistant' && message.toolCalls && message.toolCalls.length > 0) {
+                message.toolCalls.forEach((toolCall) => {
+                  const isCompleted = toolCall.status === 'completed';
+                  messageItems.push(
                     <div
-                      className={cn(
-                        "rounded-2xl px-4 py-3 text-sm",
-                        message.role === 'user'
-                          ? "bg-chat-bubble-user text-chat-bubble-user-foreground ml-auto"
-                          : "bg-chat-bubble-assistant text-chat-bubble-assistant-foreground"
-                      )}
+                      key={`${message.id}-${toolCall.id}`}
+                      className="flex gap-3 animate-fade-in justify-start"
                     >
-                      <p className="whitespace-pre-wrap">{message.content}</p>
+                      <Avatar className="w-8 h-8 bg-chat-tool-call/20 flex-shrink-0">
+                        <AvatarFallback className="bg-chat-tool-call/20 text-chat-tool-call">
+                          🔧
+                        </AvatarFallback>
+                      </Avatar>
+                      
+                      <div className="max-w-3xl min-w-0 flex-1">
+                        <Collapsible defaultOpen={!isCompleted}>
+                          <div className="bg-chat-tool-call/10 border border-chat-tool-call/20 rounded-2xl overflow-hidden">
+                            <CollapsibleTrigger className="w-full p-3 flex items-center justify-between hover:bg-chat-tool-call/5 transition-colors">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-chat-tool-call">
+                                  {toolCall.name}
+                                </span>
+                                {toolCall.status === 'pending' && (
+                                  <Loader2 className="w-4 h-4 animate-spin text-chat-tool-call" />
+                                )}
+                                {toolCall.status === 'completed' && (
+                                  <span className="text-sm text-green-500">✓</span>
+                                )}
+                              </div>
+                              <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform data-[state=closed]:rotate-[-90deg]" />
+                            </CollapsibleTrigger>
+                            
+                            <CollapsibleContent>
+                              <div className="px-3 pb-3 space-y-2 border-t border-chat-tool-call/10">
+                                {toolCall.args && Object.keys(toolCall.args).length > 0 && (
+                                  <div className="text-sm text-muted-foreground">
+                                    <strong>Arguments:</strong>
+                                    <ScrollArea className="mt-1 max-h-32">
+                                      <pre className="text-sm overflow-x-auto bg-muted/30 p-2 rounded">
+                                        {JSON.stringify(toolCall.args, null, 2)}
+                                      </pre>
+                                    </ScrollArea>
+                                  </div>
+                                )}
+                                {toolCall.result && (
+                                  <div className="text-sm">
+                                    <strong className="text-chat-tool-result">Result:</strong>
+                                    <div className="mt-1 bg-chat-tool-result/10 p-2 rounded">
+                                      <ScrollArea className="max-h-48">
+                                        <pre className="text-sm text-chat-tool-result overflow-x-auto">
+                                          {typeof toolCall.result === 'string'
+                                            ? toolCall.result
+                                            : JSON.stringify(toolCall.result, null, 2)}
+                                        </pre>
+                                      </ScrollArea>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </CollapsibleContent>
+                          </div>
+                        </Collapsible>
+                        
+                        <div className="text-xs text-muted-foreground text-left mt-1">
+                          {new Date(message.timestamp).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </div>
+                      </div>
                     </div>
-                  )}
-
+                  );
+                });
+              }
+              
+              // Then render the actual message content (if it exists)
+              if (message.content) {
+                messageItems.push(
                   <div
+                    key={message.id}
                     className={cn(
-                      "text-xs text-muted-foreground",
-                      message.role === 'user' ? "text-right" : "text-left"
+                      "flex gap-3 animate-fade-in",
+                      message.role === 'user' ? "justify-end" : "justify-start"
                     )}
                   >
-                    {new Date(message.timestamp).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </div>
-                </div>
+                    {message.role === 'assistant' && (
+                      <Avatar className="w-8 h-8 bg-secondary">
+                        <AvatarFallback>
+                          <Bot className="w-4 h-4" />
+                        </AvatarFallback>
+                      </Avatar>
+                    )}
 
-                {message.role === 'user' && (
-                  <Avatar className="w-8 h-8 bg-primary">
-                    <AvatarFallback className="bg-primary text-primary-foreground">
-                      <User className="w-4 h-4" />
-                    </AvatarFallback>
-                  </Avatar>
-                )}
-              </div>
-            ))
+                    <div className="max-w-3xl space-y-2">
+                      <div
+                        className={cn(
+                          "rounded-2xl px-4 py-3 text-sm",
+                          message.role === 'user'
+                            ? "bg-chat-bubble-user text-chat-bubble-user-foreground ml-auto"
+                            : "bg-chat-bubble-assistant text-chat-bubble-assistant-foreground"
+                        )}
+                      >
+                        <p className="whitespace-pre-wrap">{message.content}</p>
+                      </div>
+
+                      <div
+                        className={cn(
+                          "text-xs text-muted-foreground",
+                          message.role === 'user' ? "text-right" : "text-left"
+                        )}
+                      >
+                        {new Date(message.timestamp).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </div>
+                    </div>
+
+                    {message.role === 'user' && (
+                      <Avatar className="w-8 h-8 bg-primary">
+                        <AvatarFallback className="bg-primary text-primary-foreground">
+                          <User className="w-4 h-4" />
+                        </AvatarFallback>
+                      </Avatar>
+                    )}
+                  </div>
+                );
+              }
+              
+              return messageItems;
+            }).flat()
           )}
 
           {/* Loading indicator */}
