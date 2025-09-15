@@ -321,7 +321,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                             <div className="bg-chat-tool-call/10 border border-chat-tool-call/20 rounded-lg overflow-hidden">
                               <CollapsibleTrigger className="w-full p-3 flex items-center justify-between hover:bg-chat-tool-call/5 transition-colors">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-xs font-medium text-chat-tool-call">
+                                  <span className="text-sm font-medium text-chat-tool-call">
                                     🔧 {toolCall.name}
                                   </span>
                                   {toolCall.status === 'pending' && (
