@@ -5,6 +5,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Send, Loader2, User, Bot, Wifi, WifiOff, ChevronDown, ChevronRight } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { ComposerPrimitive } from '@assistant-ui/react';
+import { ComposerAttachments, ComposerAddAttachment, UserMessageAttachments } from '@/components/assistant-ui/attachment';
 import { cn } from '@/lib/utils';
 import { useChatStore, useCurrentThread, ChatMessage, ToolCall } from '@/store/chatStore';
 import { getMockResponse, simulateStreamingResponse } from '@/services/mockData';
@@ -430,29 +432,75 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
 
       {/* Input */}
       <div className="border-t border-border p-4 flex-shrink-0">
-        <form onSubmit={handleSubmit} className="flex gap-2">
-          <Textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type your message..."
-            className="min-h-[60px] max-h-32 resize-none"
-            disabled={isLoading}
-          />
-          <Button
-            type="submit"
-            size="icon"
-            disabled={!input.trim() || isLoading}
-            className="w-12 h-12 bg-primary hover:bg-primary/90 flex-shrink-0"
-          >
-            {isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Send className="w-4 h-4" />
-            )}
-          </Button>
-        </form>
+        <ComposerPrimitive.Root 
+          className="flex flex-col gap-2" 
+          onSubmit={async (event: any) => {
+            const value = event.value || (event.target as any)?.value?.trim() || '';
+            if (!value.trim() || isLoading) return;
+            
+            setIsLoading(true);
+            setLoading(true);
+
+            try {
+              // Add user message
+              const threadId = currentThreadId || createThread();
+              const userMessageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+              addMessage(threadId, {
+                role: 'user',
+                content: value.trim()
+              });
+
+              // Add assistant message placeholder
+              const assistantMessageId = `msg_${Date.now() + 1}_${Math.random().toString(36).substr(2, 9)}`;
+              addMessage(threadId, {
+                role: 'assistant',
+                content: ''
+              });
+
+              scrollToBottom();
+
+              try {
+                await simulateStreamingResponse({ content: value.trim() }, (content, toolCalls) => {
+                  updateMessage(threadId, assistantMessageId, { content, toolCalls });
+                });
+              } catch (backendError) {
+                setIsBackendAvailable(false);
+                const response = getMockResponse(value.trim());
+                await simulateStreamingResponse(response, (content, toolCalls) => {
+                  updateMessage(threadId, assistantMessageId, { content, toolCalls });
+                });
+              }
+            } finally {
+              setIsLoading(false);
+              setLoading(false);
+            }
+          }}
+        >
+          <ComposerAttachments />
+          <div className="flex gap-2">
+            <ComposerAddAttachment />
+            <ComposerPrimitive.Input
+              autoFocus
+              placeholder="Type your message..."
+              className="min-h-[60px] max-h-32 resize-none flex-1 p-3 rounded-md border border-input bg-background text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={isLoading}
+            />
+            <ComposerPrimitive.Send asChild>
+              <Button
+                type="submit"
+                size="icon"
+                disabled={isLoading}
+                className="w-12 h-12 bg-primary hover:bg-primary/90 flex-shrink-0"
+              >
+                {isLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Send className="w-4 h-4" />
+                )}
+              </Button>
+            </ComposerPrimitive.Send>
+          </div>
+        </ComposerPrimitive.Root>
       </div>
     </div>
   );
