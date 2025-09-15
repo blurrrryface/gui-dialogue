@@ -85,8 +85,8 @@ All colors MUST be HSL for theme consistency.
     --chat-bubble-user-foreground: 0 0% 100%;
     --chat-bubble-assistant: 210 40% 96.1%;
     --chat-bubble-assistant-foreground: 222.2 84% 4.9%;
-    --chat-tool-call: 260 100% 70%;
-    --chat-tool-result: 150 60% 45%;
+    --chat-tool-call: 220 90% 56%; /* Element UI blue for tools */
+    --chat-tool-result: 220 70% 45%; /* Darker blue for results */
     
     --sidebar-background: 210 40% 98%;
     --sidebar-hover: 210 40% 96%;
