@@ -28,6 +28,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   const { 
     threads, 
     currentThreadId: storeThreadId, 
+    graphId,
     createThread, 
     addMessage, 
     updateMessage, 
@@ -110,7 +111,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          graph_id: 'langgraph-app',
+          graph_id: graphId,
         }),
       });
 

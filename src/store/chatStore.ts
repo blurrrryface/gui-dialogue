@@ -39,6 +39,7 @@ interface ChatState {
   threads: ChatThread[];
   currentThreadId: string | null;
   isLoading: boolean;
+  graphId: string; // 新增 graph_id 状态
   
   // Actions
   createThread: (title?: string) => string;
@@ -47,6 +48,7 @@ interface ChatState {
   addMessage: (threadId: string, message: Omit<ChatMessage, 'id' | 'timestamp'>) => void;
   updateMessage: (threadId: string, messageId: string, updates: Partial<ChatMessage>) => void;
   setLoading: (loading: boolean) => void;
+  setGraphId: (graphId: string) => void; // 新增设置 graph_id 的方法
   clearAllThreads: () => void;
 }
 
@@ -56,6 +58,7 @@ export const useChatStore = create<ChatState>()(
       threads: [],
       currentThreadId: null,
       isLoading: false,
+      graphId: 'langgraph-app', // 默认 graph_id
 
       createThread: (title = 'New Chat') => {
         const newThread: ChatThread = {
@@ -134,6 +137,10 @@ export const useChatStore = create<ChatState>()(
 
       setLoading: (loading: boolean) => {
         set({ isLoading: loading });
+      },
+
+      setGraphId: (graphId: string) => {
+        set({ graphId });
       },
 
       clearAllThreads: () => {

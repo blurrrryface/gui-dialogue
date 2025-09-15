@@ -1,22 +1,36 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useChatStore } from '@/store/chatStore';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Plus, MessageSquare, Trash2, Settings } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Plus, MessageSquare, Trash2, Settings, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface SidebarProps {
   className?: string;
 }
 
+// 预定义的 Graph ID 选项
+const GRAPH_OPTIONS = [
+  { id: 'langgraph-app', name: 'LangGraph App', description: '默认应用' },
+  { id: 'chat-agent', name: 'Chat Agent', description: '聊天代理' },
+  { id: 'rag-system', name: 'RAG System', description: '检索增强生成' },
+  { id: 'code-assistant', name: 'Code Assistant', description: '代码助手' },
+  { id: 'data-analyst', name: 'Data Analyst', description: '数据分析' },
+];
+
 export function Sidebar({ className }: SidebarProps) {
   const {
     threads,
     currentThreadId,
+    graphId,
     createThread,
     selectThread,
     deleteThread,
+    setGraphId,
   } = useChatStore();
+
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const handleNewChat = () => {
     createThread();
@@ -25,6 +39,15 @@ export function Sidebar({ className }: SidebarProps) {
   const handleDeleteThread = (threadId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     deleteThread(threadId);
+  };
+
+  const handleGraphIdChange = (newGraphId: string) => {
+    setGraphId(newGraphId);
+    setIsSettingsOpen(false);
+  };
+
+  const getCurrentGraph = () => {
+    return GRAPH_OPTIONS.find(option => option.id === graphId) || GRAPH_OPTIONS[0];
   };
 
   const formatDate = (timestamp: number) => {
@@ -105,7 +128,57 @@ export function Sidebar({ className }: SidebarProps) {
       </ScrollArea>
 
       {/* Footer */}
-      <div className="p-4 border-t border-border">
+      <div className="p-4 border-t border-border space-y-3">
+        {/* Graph ID Selection */}
+        <div className="space-y-2">
+          <div className="text-xs font-medium text-muted-foreground px-2">
+            Current Graph
+          </div>
+          <DropdownMenu open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="outline" 
+                className="w-full justify-between text-left h-auto py-2"
+                size="sm"
+              >
+                <div className="flex flex-col items-start">
+                  <span className="text-sm font-medium">
+                    {getCurrentGraph().name}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {getCurrentGraph().description}
+                  </span>
+                </div>
+                <ChevronDown className="w-4 h-4 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent 
+              align="start" 
+              className="w-64 bg-background border border-border shadow-lg z-50"
+            >
+              {GRAPH_OPTIONS.map((option) => (
+                <DropdownMenuItem
+                  key={option.id}
+                  onClick={() => handleGraphIdChange(option.id)}
+                  className={cn(
+                    "flex flex-col items-start p-3 cursor-pointer",
+                    option.id === graphId && "bg-accent"
+                  )}
+                >
+                  <div className="font-medium text-sm">{option.name}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {option.description}
+                  </div>
+                  <div className="text-xs text-muted-foreground font-mono mt-1">
+                    ID: {option.id}
+                  </div>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* Settings Button */}
         <Button variant="ghost" className="w-full justify-start" size="sm">
           <Settings className="w-4 h-4 mr-2" />
           Settings
