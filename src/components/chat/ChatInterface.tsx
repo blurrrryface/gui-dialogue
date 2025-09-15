@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Loader2, User, Bot, Wifi, WifiOff } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Send, Loader2, User, Bot, Wifi, WifiOff, ChevronDown, ChevronRight } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { useChatStore, useCurrentThread, ChatMessage, ToolCall } from '@/store/chatStore';
@@ -313,40 +314,58 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                   {/* Tool Calls - Show first for assistant messages */}
                   {message.role === 'assistant' && message.toolCalls && message.toolCalls.length > 0 && (
                     <div className="space-y-2">
-                      {message.toolCalls.map((toolCall) => (
-                        <div
-                          key={toolCall.id}
-                          className="bg-chat-tool-call/10 border border-chat-tool-call/20 rounded-lg p-3"
-                        >
-                          <div className="text-xs font-medium text-chat-tool-call mb-2">
-                            🔧 {toolCall.name}
-                          </div>
-                          {toolCall.args && Object.keys(toolCall.args).length > 0 && (
-                            <div className="text-xs text-muted-foreground mb-2">
-                              <strong>Args:</strong>
-                              <ScrollArea className="mt-1 max-h-32">
-                                <pre className="text-xs overflow-x-auto">
-                                  {JSON.stringify(toolCall.args, null, 2)}
-                                </pre>
-                              </ScrollArea>
+                      {message.toolCalls.map((toolCall) => {
+                        const isCompleted = toolCall.status === 'completed';
+                        return (
+                          <Collapsible key={toolCall.id} defaultOpen={!isCompleted}>
+                            <div className="bg-chat-tool-call/10 border border-chat-tool-call/20 rounded-lg overflow-hidden">
+                              <CollapsibleTrigger className="w-full p-3 flex items-center justify-between hover:bg-chat-tool-call/5 transition-colors">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs font-medium text-chat-tool-call">
+                                    🔧 {toolCall.name}
+                                  </span>
+                                  {toolCall.status === 'pending' && (
+                                    <Loader2 className="w-3 h-3 animate-spin text-chat-tool-call" />
+                                  )}
+                                  {toolCall.status === 'completed' && (
+                                    <span className="text-xs text-green-500">✓</span>
+                                  )}
+                                </div>
+                                <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform data-[state=closed]:rotate-[-90deg]" />
+                              </CollapsibleTrigger>
+                              
+                              <CollapsibleContent>
+                                <div className="px-3 pb-3 space-y-2 border-t border-chat-tool-call/10">
+                                  {toolCall.args && Object.keys(toolCall.args).length > 0 && (
+                                    <div className="text-xs text-muted-foreground">
+                                      <strong>Arguments:</strong>
+                                      <ScrollArea className="mt-1 max-h-32">
+                                        <pre className="text-xs overflow-x-auto bg-muted/30 p-2 rounded">
+                                          {JSON.stringify(toolCall.args, null, 2)}
+                                        </pre>
+                                      </ScrollArea>
+                                    </div>
+                                  )}
+                                  {toolCall.result && (
+                                    <div className="text-xs">
+                                      <strong className="text-chat-tool-result">Result:</strong>
+                                      <div className="mt-1 bg-chat-tool-result/10 p-2 rounded">
+                                        <ScrollArea className="max-h-48">
+                                          <pre className="text-xs text-chat-tool-result overflow-x-auto">
+                                            {typeof toolCall.result === 'string'
+                                              ? toolCall.result
+                                              : JSON.stringify(toolCall.result, null, 2)}
+                                          </pre>
+                                        </ScrollArea>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </CollapsibleContent>
                             </div>
-                          )}
-                          {toolCall.result && (
-                            <div className="text-xs">
-                              <strong className="text-chat-tool-result">Result:</strong>
-                              <div className="mt-1 bg-chat-tool-result/10 p-2 rounded">
-                                <ScrollArea className="max-h-48">
-                                  <pre className="text-xs text-chat-tool-result overflow-x-auto">
-                                    {typeof toolCall.result === 'string'
-                                      ? toolCall.result
-                                      : JSON.stringify(toolCall.result, null, 2)}
-                                  </pre>
-                                </ScrollArea>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ))}
+                          </Collapsible>
+                        );
+                      })}
                     </div>
                   )}
 
