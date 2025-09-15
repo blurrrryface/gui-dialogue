@@ -255,34 +255,10 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   const messages = currentThread?.messages || [];
 
   return (
-    <div className={cn("flex flex-col h-full bg-background", className)}>
-      {/* Header */}
-      <div className="border-b border-border p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-semibold">
-              {currentThread?.title || 'AI Chat Assistant'}
-            </h1>
-            <p className="text-sm text-muted-foreground flex items-center gap-2">
-              {isBackendAvailable ? (
-                <>
-                  <Wifi className="w-4 h-4 text-green-500" />
-                  Powered by LangGraph
-                </>
-              ) : (
-                <>
-                  <WifiOff className="w-4 h-4 text-orange-500" />
-                  Mock Mode (Backend Unavailable)
-                </>
-              )}
-            </p>
-          </div>
-        </div>
-      </div>
-
+    <div className="flex flex-col h-full bg-background">
       {/* Messages */}
-      <ScrollArea className="flex-1 p-4">
-        <div className="space-y-4">
+      <ScrollArea className="flex-1 min-h-0 p-4">
+        <div className="space-y-4 pb-4">
           {messages.length === 0 ? (
             <div className="flex items-center justify-center h-64">
               <div className="text-center space-y-4">
@@ -453,7 +429,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
       </ScrollArea>
 
       {/* Input */}
-      <div className="border-t border-border p-4">
+      <div className="border-t border-border p-4 flex-shrink-0">
         <form onSubmit={handleSubmit} className="flex gap-2">
           <Textarea
             ref={textareaRef}
@@ -468,7 +444,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
             type="submit"
             size="icon"
             disabled={!input.trim() || isLoading}
-            className="w-12 h-12 bg-primary hover:bg-primary/90"
+            className="w-12 h-12 bg-primary hover:bg-primary/90 flex-shrink-0"
           >
             {isLoading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
