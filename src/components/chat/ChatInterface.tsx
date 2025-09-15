@@ -2,10 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Loader2, User, Bot } from 'lucide-react';
+import { Send, Loader2, User, Bot, Wifi, WifiOff } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { useChatStore, useCurrentThread, ChatMessage, ToolCall } from '@/store/chatStore';
+import { getMockResponse, simulateStreamingResponse } from '@/services/mockData';
 
 interface ChatInterfaceProps {
   className?: string;
@@ -17,6 +18,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [currentThreadId, setCurrentThreadId] = useState<string | null>(null);
+  const [isBackendAvailable, setIsBackendAvailable] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -95,6 +97,8 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
+
+      setIsBackendAvailable(true);
 
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
@@ -176,11 +180,18 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
       }
     } catch (error) {
       console.error('Error calling LangGraph API:', error);
-      if (currentThreadId) {
-        updateMessage(currentThreadId, messageId, {
-          content: `Sorry, I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}`
-        });
-      }
+      setIsBackendAvailable(false);
+      
+      // Use mock data when backend is unavailable
+      const mockResponse = getMockResponse(message);
+      await simulateStreamingResponse(mockResponse, (content, toolCalls) => {
+        if (currentThreadId) {
+          updateMessage(currentThreadId, messageId, {
+            content,
+            toolCalls
+          });
+        }
+      });
     }
   };
 
@@ -246,12 +257,26 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
     <div className={cn("flex flex-col h-full bg-background", className)}>
       {/* Header */}
       <div className="border-b border-border p-4">
-        <h1 className="text-lg font-semibold">
-          {currentThread?.title || 'AI Chat Assistant'}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Powered by LangGraph
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-lg font-semibold">
+              {currentThread?.title || 'AI Chat Assistant'}
+            </h1>
+            <p className="text-sm text-muted-foreground flex items-center gap-2">
+              {isBackendAvailable ? (
+                <>
+                  <Wifi className="w-4 h-4 text-green-500" />
+                  Powered by LangGraph
+                </>
+              ) : (
+                <>
+                  <WifiOff className="w-4 h-4 text-orange-500" />
+                  Mock Mode (Backend Unavailable)
+                </>
+              )}
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Messages */}
