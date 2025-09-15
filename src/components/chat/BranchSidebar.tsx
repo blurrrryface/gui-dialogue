@@ -127,13 +127,13 @@ export function BranchSidebar({ className, onClose }: BranchSidebarProps) {
   const getStatusIcon = (status: BranchNode['status']) => {
     switch (status) {
       case 'completed':
-        return <CheckCircle2 className="w-3 h-3 text-green-500" />;
+        return <CheckCircle2 className="w-3 h-3 status-completed" />;
       case 'error':
-        return <AlertCircle className="w-3 h-3 text-red-500" />;
+        return <AlertCircle className="w-3 h-3 status-error" />;
       case 'pending':
-        return <Loader2 className="w-3 h-3 text-blue-500 animate-spin" />;
+        return <Loader2 className="w-3 h-3 status-pending animate-spin" />;
       case 'active':
-        return <Clock className="w-3 h-3 text-orange-500" />;
+        return <Clock className="w-3 h-3 status-active" />;
       default:
         return null;
     }
@@ -148,15 +148,58 @@ export function BranchSidebar({ className, onClose }: BranchSidebarProps) {
     return `${hours}h ago`;
   };
 
+  const getNodeContainerStyles = (node: BranchNode, isSelected: boolean) => {
+    const baseStyles = "flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-all duration-200 group relative";
+    
+    if (isSelected) {
+      return cn(
+        baseStyles,
+        "bg-accent border border-border shadow-sm",
+        // 确保选中状态在亮色模式下也有良好对比度
+        "dark:bg-accent/80"
+      );
+    }
+    
+    const hoverStyles = "hover:bg-muted/80 hover:shadow-sm hover:border-border/50";
+    const branchStyles = node.type === 'branch' ? "ml-4 border-l-2 border-primary bg-primary/5 dark:bg-primary/10" : "";
+    
+    return cn(baseStyles, hoverStyles, branchStyles);
+  };
+
+  const getNodeIconStyles = (node: BranchNode, isSelected: boolean) => {
+    const baseStyles = "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all";
+    
+    // 状态颜色（亮色模式优化）
+    let statusStyles = "";
+    switch (node.status) {
+      case 'active':
+        statusStyles = "border-primary bg-primary/10 animate-pulse";
+        break;
+      case 'completed':
+        statusStyles = "border-green-600 bg-green-50 dark:border-green-400 dark:bg-green-950";
+        break;
+      case 'error':
+        statusStyles = "border-red-600 bg-red-50 dark:border-red-400 dark:bg-red-950";
+        break;
+      case 'pending':
+        statusStyles = "border-blue-600 bg-blue-50 dark:border-blue-400 dark:bg-blue-950";
+        break;
+    }
+    
+    const selectedStyles = isSelected ? "scale-110" : "";
+    
+    return cn(baseStyles, statusStyles, selectedStyles);
+  };
+
   return (
-    <div className={cn("h-full flex flex-col animate-fade-in", className)}>
+    <div className={cn("h-full flex flex-col bg-card border-l border-border", className)}>
       {/* Header */}
-      <div className="border-b border-border p-4 flex-shrink-0">
+      <div className="border-b border-border p-4 flex-shrink-0 bg-card">
         <div className="flex items-center justify-between">
           {!collapsed && (
             <div className="flex items-center gap-2">
               <GitBranch className="w-5 h-5 text-primary" />
-              <h2 className="text-lg font-semibold">Flow History</h2>
+              <h2 className="text-lg font-semibold text-card-foreground">Flow History</h2>
             </div>
           )}
           <div className="flex items-center gap-1">
@@ -182,12 +225,12 @@ export function BranchSidebar({ className, onClose }: BranchSidebarProps) {
         </div>
         
         {!collapsed && (
-          <div className="mt-3 flex gap-2 animate-fade-in">
-            <Badge variant="secondary" className="text-xs">
+          <div className="mt-3 flex gap-2">
+            <Badge variant="secondary" className="text-xs font-medium">
               Main Branch
             </Badge>
             <Badge variant="outline" className="text-xs">
-              5 nodes
+              {mockNodes.length} nodes
             </Badge>
           </div>
         )}
@@ -196,92 +239,77 @@ export function BranchSidebar({ className, onClose }: BranchSidebarProps) {
       {/* Content */}
       <div className="flex-1 min-h-0">
         {!collapsed ? (
-          <ScrollArea className="h-full px-2">
-            <div className="space-y-4 py-4">
+          <ScrollArea className="h-full">
+            <div className="space-y-4 p-4">
               {/* Current Flow */}
-              <div className="animate-fade-in">
+              <div>
                 <div 
-                  className="flex items-center gap-2 cursor-pointer py-1 hover:bg-muted/50 rounded px-2 transition-colors"
+                  className="flex items-center gap-2 cursor-pointer py-2 px-2 hover:bg-muted/50 rounded transition-colors"
                   onClick={() => toggleGroup('main-flow')}
                 >
                   {expandedGroups.includes('main-flow') ? (
-                    <ChevronDown className="w-4 h-4" />
+                    <ChevronDown className="w-4 h-4 text-foreground" />
                   ) : (
-                    <ChevronRight className="w-4 h-4" />
+                    <ChevronRight className="w-4 h-4 text-foreground" />
                   )}
-                  <span className="text-sm font-medium">Current Flow</span>
+                  <span className="text-sm font-semibold text-foreground">Current Flow</span>
                 </div>
                 
                 {expandedGroups.includes('main-flow') && (
-                  <div className="mt-2 animate-fade-in">
-                    <div className="space-y-2 pl-2">
-                      {mockNodes.map((node, index) => (
-                        <div key={node.id} className="relative animate-fade-in" style={{ animationDelay: `${index * 50}ms` }}>
-                          {/* Connection line */}
-                          {index > 0 && (
-                            <div className="absolute left-4 -top-2 w-px h-4 bg-gradient-to-b from-border to-transparent" />
-                          )}
+                  <div className="mt-2 space-y-1">
+                    {mockNodes.map((node, index) => (
+                      <div key={node.id} className="relative">
+                        {/* Connection line */}
+                        {index > 0 && (
+                          <div className="absolute left-4 -top-1 w-px h-3 flow-connection-line" />
+                        )}
+                        
+                        <div 
+                          className={getNodeContainerStyles(node, selectedNode === node.id)}
+                          onClick={() => setSelectedNode(node.id)}
+                        >
+                          {/* Node icon */}
+                          <div className={getNodeIconStyles(node, selectedNode === node.id)}>
+                            {getNodeIcon(node)}
+                          </div>
                           
-                          <div 
-                            className={cn(
-                              "flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-all duration-200 group relative hover-scale",
-                              selectedNode === node.id 
-                                ? "bg-accent border border-accent-foreground/20 shadow-sm scale-[1.02]" 
-                                : "hover:bg-muted/50 hover:shadow-sm",
-                              node.type === 'branch' && "ml-4 border-l-2 border-primary bg-primary/5"
-                            )}
-                            onClick={() => setSelectedNode(node.id)}
-                          >
-                            {/* Node icon */}
-                            <div className={cn(
-                              "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all",
-                              node.status === 'active' && "border-primary bg-primary/10 animate-pulse",
-                              node.status === 'completed' && "border-green-500 bg-green-50 dark:bg-green-950",
-                              node.status === 'error' && "border-red-500 bg-red-50 dark:bg-red-950",
-                              node.status === 'pending' && "border-blue-500 bg-blue-50 dark:bg-blue-950",
-                              selectedNode === node.id && "scale-110"
-                            )}>
-                              {getNodeIcon(node)}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-sm font-medium text-foreground truncate">
+                                {node.title}
+                              </span>
+                              {getStatusIcon(node.status)}
                             </div>
                             
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium truncate">
-                                  {node.title}
-                                </span>
-                                {getStatusIcon(node.status)}
-                              </div>
+                            {node.content && (
+                              <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
+                                {node.content}
+                              </p>
+                            )}
+                            
+                            {node.branchName && (
+                              <Badge variant="outline" className="text-xs mb-2 bg-primary/5 border-primary/20">
+                                {node.branchName}
+                              </Badge>
+                            )}
+                            
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-medium text-muted-foreground">
+                                {formatTime(node.timestamp)}
+                              </span>
                               
-                              {node.content && (
-                                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                                  {node.content}
-                                </p>
-                              )}
-                              
-                              {node.branchName && (
-                                <Badge variant="outline" className="text-xs mt-1 hover-scale">
-                                  {node.branchName}
-                                </Badge>
-                              )}
-                              
-                              <div className="flex items-center justify-between mt-2">
-                                <span className="text-xs text-muted-foreground">
-                                  {formatTime(node.timestamp)}
-                                </span>
-                                
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="w-6 h-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent"
-                                >
-                                  <MoreHorizontal className="w-3 h-3" />
-                                </Button>
-                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="w-6 h-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent"
+                              >
+                                <MoreHorizontal className="w-3 h-3" />
+                              </Button>
                             </div>
                           </div>
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
@@ -289,18 +317,30 @@ export function BranchSidebar({ className, onClose }: BranchSidebarProps) {
               <Separator />
 
               {/* Branch Actions */}
-              <div className="animate-fade-in">
-                <span className="text-sm font-medium text-muted-foreground px-2">Actions</span>
-                <div className="mt-2 space-y-2">
-                  <Button variant="outline" size="sm" className="w-full justify-start hover-scale">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground mb-3 px-2">Actions</h3>
+                <div className="space-y-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full justify-start font-medium hover:bg-muted/80 hover:border-primary/50"
+                  >
                     <GitBranch className="w-4 h-4 mr-2" />
                     Create Branch
                   </Button>
-                  <Button variant="outline" size="sm" className="w-full justify-start hover-scale">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full justify-start font-medium hover:bg-muted/80 hover:border-primary/50"
+                  >
                     <GitMerge className="w-4 h-4 mr-2" />
                     Merge Branch  
                   </Button>
-                  <Button variant="outline" size="sm" className="w-full justify-start hover-scale">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full justify-start font-medium hover:bg-muted/80 hover:border-primary/50"
+                  >
                     <Clock className="w-4 h-4 mr-2" />
                     Rollback to Node
                   </Button>
@@ -310,24 +350,28 @@ export function BranchSidebar({ className, onClose }: BranchSidebarProps) {
           </ScrollArea>
         ) : (
           // Collapsed view - show only icons
-          <div className="flex flex-col items-center gap-3 p-2 animate-fade-in">
-            {mockNodes.slice(0, 3).map((node, index) => (
+          <div className="flex flex-col items-center gap-3 p-3">
+            {mockNodes.slice(0, 4).map((node, index) => (
               <div 
                 key={node.id}
                 className={cn(
-                  "w-8 h-8 rounded-full border-2 flex items-center justify-center cursor-pointer transition-all hover-scale",
+                  "w-8 h-8 rounded-full border-2 flex items-center justify-center cursor-pointer transition-all",
                   selectedNode === node.id && "border-primary bg-primary/10 scale-110",
-                  node.status === 'completed' && "border-green-500",
-                  node.status === 'error' && "border-red-500",
-                  node.status === 'pending' && "border-blue-500"
+                  node.status === 'completed' && "border-green-600 dark:border-green-400",
+                  node.status === 'error' && "border-red-600 dark:border-red-400", 
+                  node.status === 'pending' && "border-blue-600 dark:border-blue-400",
+                  "hover:scale-105 hover:shadow-sm"
                 )}
                 onClick={() => setSelectedNode(node.id)}
-                style={{ animationDelay: `${index * 100}ms` }}
               >
                 {getNodeIcon(node)}
               </div>
             ))}
-            <div className="text-xs text-muted-foreground">+{mockNodes.length - 3}</div>
+            {mockNodes.length > 4 && (
+              <div className="text-xs text-muted-foreground font-medium">
+                +{mockNodes.length - 4}
+              </div>
+            )}
           </div>
         )}
       </div>

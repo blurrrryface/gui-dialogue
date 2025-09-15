@@ -74,9 +74,9 @@ All colors MUST be HSL for theme consistency.
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
     --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 220 90% 56%;
-    --accent-foreground: 0 0% 100%;
+    --muted-foreground: 215.4 16.3% 40%; /* 更深的灰色提高对比度 */
+    --accent: 220 14% 95%;
+    --accent-foreground: 222.2 84% 4.9%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 240 100% 60%;
@@ -89,8 +89,8 @@ All colors MUST be HSL for theme consistency.
     --chat-tool-result: 220 70% 45%; /* Darker blue for results */
     
     --sidebar-background: 210 40% 98%;
-    --sidebar-hover: 210 40% 96%;
-    --sidebar-active: 210 40% 94%;
+    --sidebar-hover: 210 40% 95%;
+    --sidebar-active: 220 90% 96%;
   }
 }
 
@@ -148,5 +148,47 @@ All colors MUST be HSL for theme consistency.
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Flow History 样式优化 */
+  .flow-node-selected {
+    @apply bg-accent border-accent-foreground/10 shadow-sm;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .flow-node-hover {
+    @apply hover:bg-muted/60 hover:shadow-sm;
+    transition: all 0.2s ease-in-out;
+  }
+
+  .flow-connection-line {
+    @apply bg-gradient-to-b from-border to-transparent opacity-60;
+  }
+
+  /* 确保在亮色模式下有足够的对比度 */
+  .light .flow-node-selected {
+    background-color: hsl(220 90% 96%);
+    border-color: hsl(220 90% 85%);
+  }
+
+  .light .text-muted-foreground {
+    color: hsl(215.4 16.3% 35%); /* 更深的颜色提高可读性 */
+  }
+
+  /* 状态指示器优化 */
+  .status-completed {
+    @apply text-green-700 dark:text-green-400;
+  }
+
+  .status-error {
+    @apply text-red-700 dark:text-red-400;
+  }
+
+  .status-pending {
+    @apply text-blue-700 dark:text-blue-400;
+  }
+
+  .status-active {
+    @apply text-orange-700 dark:text-orange-400;
   }
 }
