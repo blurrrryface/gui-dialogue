@@ -4,6 +4,7 @@ import { Sidebar } from './Sidebar';
 import { Button } from '@/components/ui/button';
 import { Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export function ChatLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -41,7 +42,16 @@ export function ChatLayout() {
               <Menu className="w-5 h-5" />
             )}
           </Button>
-          <h1 className="text-lg font-semibold">AI Chat</h1>
+          <h1 className="text-lg font-semibold flex-1">AI Chat</h1>
+          <ThemeToggle />
+        </div>
+
+        {/* Desktop header with theme toggle */}
+        <div className="hidden lg:block border-b border-border p-4">
+          <div className="flex items-center justify-between">
+            <h1 className="text-lg font-semibold">AI Chat</h1>
+            <ThemeToggle />
+          </div>
         </div>
 
         {/* Chat interface */}

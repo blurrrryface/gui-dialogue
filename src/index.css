@@ -20,10 +20,10 @@ All colors MUST be HSL for theme consistency.
     --popover: 220 14% 12%;
     --popover-foreground: 210 40% 95%;
 
-    /* Brand colors - Blue to purple gradient theme */
-    --primary: 240 100% 70%;
-    --primary-foreground: 220 14% 8%;
-    --primary-glow: 260 100% 75%;
+    /* Element UI inspired blue theme */
+    --primary: 220 90% 56%; /* Element UI primary blue #409EFF */
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 220 100% 70%;
 
     --secondary: 220 14% 15%;
     --secondary-foreground: 210 40% 90%;
@@ -31,8 +31,8 @@ All colors MUST be HSL for theme consistency.
     --muted: 220 14% 12%;
     --muted-foreground: 215 25% 65%;
 
-    --accent: 240 100% 70%;
-    --accent-foreground: 220 14% 8%;
+    --accent: 220 90% 56%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
@@ -42,8 +42,8 @@ All colors MUST be HSL for theme consistency.
     --ring: 240 100% 70%;
 
     /* Chat-specific colors */
-    --chat-bubble-user: 240 100% 70%;
-    --chat-bubble-user-foreground: 220 14% 8%;
+    --chat-bubble-user: 220 90% 56%; /* Element UI blue */
+    --chat-bubble-user-foreground: 0 0% 100%;
     --chat-bubble-assistant: 220 14% 15%;
     --chat-bubble-assistant-foreground: 210 40% 95%;
     --chat-tool-call: 260 100% 75%;
@@ -69,20 +69,20 @@ All colors MUST be HSL for theme consistency.
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 240 100% 60%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 220 90% 56%; /* Element UI blue in light mode */
+    --primary-foreground: 0 0% 100%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 240 100% 60%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 220 90% 56%;
+    --accent-foreground: 0 0% 100%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 240 100% 60%;
     
-    --chat-bubble-user: 240 100% 60%;
-    --chat-bubble-user-foreground: 210 40% 98%;
+    --chat-bubble-user: 220 90% 56%; /* Element UI blue in light */
+    --chat-bubble-user-foreground: 0 0% 100%;
     --chat-bubble-assistant: 210 40% 96.1%;
     --chat-bubble-assistant-foreground: 222.2 84% 4.9%;
     --chat-tool-call: 260 100% 70%;
