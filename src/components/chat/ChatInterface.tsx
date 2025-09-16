@@ -156,6 +156,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
       const decoder = new TextDecoder();
       let fullContent = '';
       let toolCalls: ToolCall[] = [];
+      let buffer = ''; // Buffer for incomplete lines
 
       if (reader) {
         while (true) {
@@ -163,7 +164,11 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
           if (done) break;
 
           const chunk = decoder.decode(value);
-          const lines = chunk.split('\n');
+          buffer += chunk;
+          const lines = buffer.split('\n');
+          
+          // Keep the last potentially incomplete line in buffer
+          buffer = lines.pop() || '';
 
           for (const line of lines) {
             if (line.startsWith('data: ')) {
