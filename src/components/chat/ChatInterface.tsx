@@ -172,7 +172,15 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                 if (!jsonStr) continue; // Skip empty data lines
                 
                 const data = JSON.parse(jsonStr);
-                console.log('Received stream data:', data);
+                console.log('Received stream data type:', data.type);
+                if (data.type === 'tool_call') {
+                  console.log('Tool call details:', {
+                    id: data.toolCall?.id,
+                    status: data.toolCall?.status, 
+                    hasResult: !!data.toolCall?.result,
+                    resultLength: data.toolCall?.result ? data.toolCall.result.length : 0
+                  });
+                }
                 
                 if (data.type === 'content' && data.content) {
                   fullContent += data.content;
