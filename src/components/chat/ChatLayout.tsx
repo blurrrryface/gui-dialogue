@@ -9,8 +9,8 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 
 export function ChatLayout() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [branchSidebarOpen, setBranchSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [branchSidebarOpen, setBranchSidebarOpen] = useState(false);
 
   return (
     <SidebarProvider>
@@ -25,10 +25,17 @@ export function ChatLayout() {
 
         {/* Left Sidebar - Chat History */}
         <div className={cn(
-          "fixed inset-y-0 left-0 z-50 w-80 bg-sidebar-background border-r border-border transform transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex-shrink-0",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          "fixed inset-y-0 left-0 z-50 bg-sidebar-background border-r border-border transform transition-transform duration-300 ease-in-out flex-shrink-0",
+          "lg:static lg:inset-0",
+          sidebarOpen ? "translate-x-0 w-80" : "-translate-x-full lg:translate-x-0 lg:w-0",
+          "lg:transition-all lg:duration-300"
         )}>
-          <Sidebar />
+          <div className={cn(
+            "h-full w-80 transition-opacity duration-300",
+            sidebarOpen ? "opacity-100" : "lg:opacity-0 lg:invisible"
+          )}>
+            <Sidebar />
+          </div>
         </div>
 
         {/* Main content */}
@@ -60,9 +67,20 @@ export function ChatLayout() {
           </div>
 
           {/* Desktop header with theme toggle */}
-          <div className="hidden lg:block border-b border-border p-4 flex-shrink-0">
+          <div className="border-b border-border p-4 flex-shrink-0">
             <div className="flex items-center justify-between">
-              <h1 className="text-lg font-semibold">AI Chat</h1>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                  className="hidden lg:flex items-center gap-2"
+                >
+                  <Menu className="w-4 h-4" />
+                  {sidebarOpen ? 'Hide' : 'Show'} Chats
+                </Button>
+                <h1 className="text-lg font-semibold">AI Chat</h1>
+              </div>
               <div className="flex items-center gap-2">
                 <Button
                   variant="ghost"
@@ -71,7 +89,7 @@ export function ChatLayout() {
                   className="flex items-center gap-2"
                 >
                   <GitBranch className="w-4 h-4" />
-                  Flow History
+                  {branchSidebarOpen ? 'Hide' : 'Show'} Flow
                 </Button>
                 <ThemeToggle />
               </div>
@@ -86,14 +104,17 @@ export function ChatLayout() {
             </div>
 
             {/* Right Sidebar - Branch History */}
-            {branchSidebarOpen && (
+            <div className={cn(
+              "border-l border-border bg-background transition-all duration-300 flex-shrink-0 overflow-hidden",
+              branchSidebarOpen ? "w-80" : "w-0"
+            )}>
               <div className={cn(
-                "border-l border-border bg-background transition-all duration-300 flex-shrink-0",
-                "w-80 lg:w-80"
+                "h-full w-80 transition-opacity duration-300",
+                branchSidebarOpen ? "opacity-100" : "opacity-0 invisible"
               )}>
                 <BranchSidebar onClose={() => setBranchSidebarOpen(false)} />
               </div>
-            )}
+            </div>
           </div>
         </div>
       </div>
