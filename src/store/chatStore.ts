@@ -8,6 +8,27 @@ export interface ChatMessage {
   toolCalls?: ToolCall[];
   attachments?: FileAttachment[];
   timestamp: number;
+  // Multi-agent support
+  agentMessages?: AgentMessage[];
+  isMultiAgent?: boolean;
+}
+
+export interface AgentMessage {
+  type: 'agent_start' | 'agent_end' | 'tool_call' | 'agent_call' | 'content' | 'complete';
+  content?: string;
+  agent_name?: string;
+  toolCall?: {
+    id: string;
+    name: string;
+    args: string;
+    result?: string;
+    status: 'pending' | 'completed' | 'error';
+  };
+  agentCall?: {
+    from_agent: string;
+    to_agent: string;
+  };
+  error?: string;
 }
 
 export interface FileAttachment {

@@ -68,11 +68,11 @@
 
 /* Tool call specific styling */
 .aui-tool-call {
-  @apply chat-tool-call border rounded-md p-3 my-2;
+  @apply border rounded-md p-3 my-2 bg-muted/50;
 }
 
 .aui-tool-result {
-  @apply chat-tool-result border rounded-md p-3;
+  @apply border rounded-md p-3 bg-muted/30;
 }
 
 /* Welcome message styling */
@@ -102,7 +102,7 @@
 
 /* Messages styling */
 .aui-message-content {
-  @apply prose prose-sm dark:prose-invert max-w-none;
+  @apply max-w-none text-sm;
 }
 
 .aui-message-content p {

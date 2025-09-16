@@ -1,6 +1,7 @@
 import React from 'react';
 import { ChatMessage } from '@/store/chatStore';
 import { ToolCallDisplay } from './ToolCallDisplay';
+import { MultiAgentDisplay } from './MultiAgentDisplay';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { User, Bot } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -15,6 +16,26 @@ interface MessageBubbleProps {
 export function MessageBubble({ message, className }: MessageBubbleProps) {
   const isUser = message.role === 'user';
   const isAssistant = message.role === 'assistant';
+
+  // Multi-agent message display
+  if (message.isMultiAgent && message.agentMessages && message.agentMessages.length > 0) {
+    return (
+      <div className={cn(
+        "p-4 animate-fade-in",
+        className
+      )}>
+        <MultiAgentDisplay messages={message.agentMessages} />
+        
+        {/* Timestamp */}
+        <div className="text-xs text-muted-foreground text-center mt-4">
+          {new Date(message.timestamp).toLocaleTimeString([], { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          })}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cn(
@@ -44,7 +65,7 @@ export function MessageBubble({ message, className }: MessageBubbleProps) {
             : "bg-chat-bubble-assistant text-chat-bubble-assistant-foreground"
         )}>
           {isAssistant ? (
-            <div className="prose prose-sm dark:prose-invert max-w-none">
+            <div className="max-w-none">
               <ReactMarkdown 
                 remarkPlugins={[remarkGfm]}
                 components={{
