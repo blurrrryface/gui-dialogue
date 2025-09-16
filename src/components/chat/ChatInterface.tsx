@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -249,6 +249,9 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                       toolCalls: [...toolCalls]
                     });
                     console.log('Real-time update: toolCalls updated', toolCalls.length);
+                    
+                    // Force immediate re-render
+                    setTimeout(() => {}, 0);
                   }
                 }
               } catch (e) {
@@ -453,7 +456,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                       </Avatar>
                       
                       <div className="max-w-3xl min-w-0 flex-1">
-                        <Collapsible defaultOpen={!isCompleted}>
+                        <Collapsible defaultOpen={true}>
                           <div className="bg-chat-tool-call/10 border border-chat-tool-call/20 rounded-2xl overflow-hidden">
                             <CollapsibleTrigger className="w-full p-3 flex items-center justify-between hover:bg-chat-tool-call/5 transition-colors">
                               <div className="flex items-center gap-2">
