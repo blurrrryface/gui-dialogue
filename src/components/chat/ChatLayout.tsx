@@ -27,11 +27,13 @@ export function ChatLayout() {
         <div className={cn(
           "fixed inset-y-0 left-0 z-50 bg-sidebar-background border-r border-border transform transition-transform duration-300 ease-in-out flex-shrink-0",
           "lg:static lg:inset-0",
-          sidebarOpen ? "translate-x-0 w-80" : "-translate-x-full lg:translate-x-0 lg:w-0",
+          sidebarOpen 
+            ? `translate-x-0 ${branchSidebarOpen ? 'w-64' : 'w-96'}` 
+            : "-translate-x-full lg:translate-x-0 lg:w-0",
           "lg:transition-all lg:duration-300"
         )}>
           <div className={cn(
-            "h-full w-80 transition-opacity duration-300",
+            `h-full transition-opacity duration-300 ${branchSidebarOpen ? 'w-64' : 'w-96'}`,
             sidebarOpen ? "opacity-100" : "lg:opacity-0 lg:invisible"
           )}>
             <Sidebar />
@@ -106,10 +108,10 @@ export function ChatLayout() {
             {/* Right Sidebar - Branch History */}
             <div className={cn(
               "border-l border-border bg-background transition-all duration-300 flex-shrink-0 overflow-hidden",
-              branchSidebarOpen ? "w-80" : "w-0"
+              branchSidebarOpen ? (sidebarOpen ? "w-64" : "w-96") : "w-0"
             )}>
               <div className={cn(
-                "h-full w-80 transition-opacity duration-300",
+                `h-full transition-opacity duration-300 ${sidebarOpen ? 'w-64' : 'w-96'}`,
                 branchSidebarOpen ? "opacity-100" : "opacity-0 invisible"
               )}>
                 <BranchSidebar onClose={() => setBranchSidebarOpen(false)} />
