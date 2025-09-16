@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -169,13 +169,29 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
             if (line.startsWith('data: ')) {
               try {
                 const jsonStr = line.slice(6).trim();
-                if (!jsonStr) continue;
+                if (!jsonStr) continue; // Skip empty data lines
                 
                 const data = JSON.parse(jsonStr);
+                console.log('Received stream data:', data);
                 
                 if (data.type === 'content' && data.content) {
                   fullContent += data.content;
                   onStreamUpdate(fullContent);
+                  
+                  // Auto-complete any pending tool calls when content starts coming in
+                  toolCalls.forEach(tc => {
+                    if (tc.status === 'pending') {
+                      tc.status = 'completed';
+                    }
+                  });
+                  
+                  // Update message with completed tool calls
+                  if (currentThreadId && toolCalls.length > 0) {
+                    updateMessage(currentThreadId, messageId, {
+                      content: fullContent,
+                      toolCalls: [...toolCalls]
+                    });
+                  }
                 } else if (data.type === 'tool_call' && data.toolCall) {
                   const toolCall = data.toolCall;
                   let args = {};
@@ -202,12 +218,21 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                     status: toolCall.status as 'pending' | 'completed' | 'error' || (toolCall.result ? 'completed' : 'pending')
                   };
                   
+                  console.log(`Tool call update: ID=${toolCall.id}, Status=${toolCall.status}, Result=${!!toolCall.result}, ExistingIndex=${existingIndex}`);
+                  console.log('Full tool call data:', toolCallData);
+                  
                   if (existingIndex !== -1) {
-                    // Update existing tool call
-                    toolCalls[existingIndex] = toolCallData;
+                    // Update existing tool call, preserving existing result if new one is empty
+                    const existingToolCall = toolCalls[existingIndex];
+                    toolCalls[existingIndex] = {
+                      ...toolCallData,
+                      result: toolCall.result || existingToolCall.result
+                    };
+                    console.log('Updated existing tool call:', toolCalls[existingIndex]);
                   } else {
                     // Add new tool call
                     toolCalls.push(toolCallData);
+                    console.log('Added new tool call:', toolCallData);
                   }
                   
                   // Update message with current tool calls
@@ -420,7 +445,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                       </Avatar>
                       
                       <div className="max-w-3xl min-w-0 flex-1">
-                        <Collapsible defaultOpen={true}>
+                        <Collapsible defaultOpen={!isCompleted}>
                           <div className="bg-chat-tool-call/10 border border-chat-tool-call/20 rounded-2xl overflow-hidden">
                             <CollapsibleTrigger className="w-full p-3 flex items-center justify-between hover:bg-chat-tool-call/5 transition-colors">
                               <div className="flex items-center gap-2">
@@ -449,18 +474,9 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                                      </ScrollArea>
                                    </div>
                                  )}
-                                 {toolCall.result && (
-                                   <div className="text-sm">
-                                     <strong className="text-chat-tool-result">Result:</strong>
-                                     <div className="mt-1 bg-chat-tool-result/10 p-2 rounded">
-                                       <ScrollArea className="max-h-96">
-                                         <pre className="text-sm text-chat-tool-result overflow-x-auto whitespace-pre-wrap">
-                                           {typeof toolCall.result === 'string'
-                                             ? toolCall.result
-                                             : JSON.stringify(toolCall.result, null, 2)}
-                                         </pre>
-                                       </ScrollArea>
-                                     </div>
+                                 {toolCall.status === 'completed' && (
+                                   <div className="text-sm text-muted-foreground">
+                                     <em>Tool executed successfully. Results shown in the assistant's response below.</em>
                                    </div>
                                  )}
                               </div>
