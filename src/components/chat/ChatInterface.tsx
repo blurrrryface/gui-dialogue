@@ -156,7 +156,6 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
       const decoder = new TextDecoder();
       let fullContent = '';
       let toolCalls: ToolCall[] = [];
-      let buffer = ''; // 添加缓冲区来处理被分割的JSON
 
       if (reader) {
         while (true) {
@@ -164,39 +163,16 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
           if (done) break;
 
           const chunk = decoder.decode(value);
-          buffer += chunk; // 将新数据添加到缓冲区
-          
-          // 处理缓冲区中的完整行
-          let lines = buffer.split('\n');
-          buffer = lines.pop() || ''; // 保留最后一个不完整的行
+          const lines = chunk.split('\n');
 
           for (const line of lines) {
             if (line.startsWith('data: ')) {
               try {
-                const jsonStr = line.slice(6).trim();
-                if (!jsonStr) continue; // Skip empty data lines
-                
-                const data = JSON.parse(jsonStr);
-                console.log('Received stream data:', data);
+                const data = JSON.parse(line.slice(6));
                 
                 if (data.type === 'content' && data.content) {
                   fullContent += data.content;
                   onStreamUpdate(fullContent);
-                  
-                  // Auto-complete any pending tool calls when content starts coming in
-                  toolCalls.forEach(tc => {
-                    if (tc.status === 'pending') {
-                      tc.status = 'completed';
-                    }
-                  });
-                  
-                  // Update message with completed tool calls
-                  if (currentThreadId && toolCalls.length > 0) {
-                    updateMessage(currentThreadId, messageId, {
-                      content: fullContent,
-                      toolCalls: [...toolCalls]
-                    });
-                  }
                 } else if (data.type === 'tool_call' && data.toolCall) {
                   const toolCall = data.toolCall;
                   let args = {};
@@ -220,25 +196,15 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                     name: toolCall.name || 'unknown_tool',
                     args: args,
                     result: toolCall.result,
-                    status: toolCall.status as 'pending' | 'completed' | 'error' || (toolCall.result ? 'completed' : 'pending')
+                    status: toolCall.status || (toolCall.result ? 'completed' : 'pending')
                   };
                   
-                  console.log(`Tool call update: ID=${toolCall.id}, Status=${toolCall.status}, Result=${!!toolCall.result}, ExistingIndex=${existingIndex}`);
-                  console.log('Full tool call data:', toolCallData);
-                  console.log('Tool call result length:', toolCall.result ? (typeof toolCall.result === 'string' ? toolCall.result.length : JSON.stringify(toolCall.result).length) : 0);
-                  
                   if (existingIndex !== -1) {
-                    // Update existing tool call, preserving existing result if new one is empty
-                    const existingToolCall = toolCalls[existingIndex];
-                    toolCalls[existingIndex] = {
-                      ...toolCallData,
-                      result: toolCall.result || existingToolCall.result
-                    };
-                    console.log('Updated existing tool call:', toolCalls[existingIndex]);
+                    // Update existing tool call
+                    toolCalls[existingIndex] = toolCallData;
                   } else {
                     // Add new tool call
                     toolCalls.push(toolCallData);
-                    console.log('Added new tool call:', toolCallData);
                   }
                   
                   // Update message with current tool calls
@@ -250,82 +216,9 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                   }
                 }
               } catch (e) {
-                console.error('JSON parsing error:', e, 'Line:', line);
-                // Skip invalid JSON lines but log the error
+                // Skip invalid JSON lines
               }
             }
-          }
-        }
-        
-        // 处理缓冲区中的最后一行数据
-        if (buffer.trim() && buffer.startsWith('data: ')) {
-          try {
-            const jsonStr = buffer.slice(6).trim();
-            if (jsonStr) {
-              const data = JSON.parse(jsonStr);
-              console.log('Processing final buffer data:', data);
-              
-              // 处理最后一行的数据（复制上面的处理逻辑）
-              if (data.type === 'content' && data.content) {
-                fullContent += data.content;
-                onStreamUpdate(fullContent);
-                
-                toolCalls.forEach(tc => {
-                  if (tc.status === 'pending') {
-                    tc.status = 'completed';
-                  }
-                });
-                
-                if (currentThreadId && toolCalls.length > 0) {
-                  updateMessage(currentThreadId, messageId, {
-                    content: fullContent,
-                    toolCalls: [...toolCalls]
-                  });
-                }
-              } else if (data.type === 'tool_call' && data.toolCall) {
-                const toolCall = data.toolCall;
-                let args = {};
-                
-                if (typeof toolCall.args === 'string') {
-                  try {
-                    args = JSON.parse(toolCall.args);
-                  } catch (e) {
-                    console.error('Failed to parse tool args:', e);
-                    args = { raw: toolCall.args };
-                  }
-                } else {
-                  args = toolCall.args || {};
-                }
-                
-                const existingIndex = toolCalls.findIndex(tc => tc.id === toolCall.id);
-                const toolCallData = {
-                  id: toolCall.id || `tool_${Date.now()}`,
-                  name: toolCall.name || 'unknown_tool',
-                  args: args,
-                  result: toolCall.result,
-                  status: toolCall.status as 'pending' | 'completed' | 'error' || (toolCall.result ? 'completed' : 'pending')
-                };
-                
-                if (existingIndex !== -1) {
-                  const existingToolCall = toolCalls[existingIndex];
-                  toolCalls[existingIndex] = {
-                    ...toolCallData,
-                    result: toolCall.result || existingToolCall.result
-                  };
-                } else {
-                  toolCalls.push(toolCallData);
-                }
-                
-                if (currentThreadId) {
-                  updateMessage(currentThreadId, messageId, {
-                    content: fullContent,
-                    toolCalls: [...toolCalls]
-                  });
-                }
-              }
-            }
-          } catch (e) {
-            console.error('Error processing final buffer:', e, 'Buffer:', buffer);
           }
         }
       }
@@ -543,21 +436,30 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                             
                             <CollapsibleContent>
                               <div className="px-3 pb-3 space-y-2 border-t border-chat-tool-call/10">
-                                 {toolCall.args && Object.keys(toolCall.args).length > 0 && (
-                                   <div className="text-sm text-muted-foreground">
-                                     <strong>Arguments:</strong>
-                                     <ScrollArea className="mt-1 max-h-32">
-                                       <pre className="text-sm overflow-x-auto bg-muted/30 p-2 rounded">
-                                         {JSON.stringify(toolCall.args, null, 2)}
-                                       </pre>
-                                     </ScrollArea>
-                                   </div>
-                                 )}
-                                 {toolCall.status === 'completed' && (
-                                   <div className="text-sm text-muted-foreground">
-                                     <em>Tool executed successfully. Results shown in the assistant's response below.</em>
-                                   </div>
-                                 )}
+                                {toolCall.args && Object.keys(toolCall.args).length > 0 && (
+                                  <div className="text-sm text-muted-foreground">
+                                    <strong>Arguments:</strong>
+                                    <ScrollArea className="mt-1 max-h-32">
+                                      <pre className="text-sm overflow-x-auto bg-muted/30 p-2 rounded">
+                                        {JSON.stringify(toolCall.args, null, 2)}
+                                      </pre>
+                                    </ScrollArea>
+                                  </div>
+                                )}
+                                {toolCall.result && (
+                                  <div className="text-sm">
+                                    <strong className="text-chat-tool-result">Result:</strong>
+                                    <div className="mt-1 bg-chat-tool-result/10 p-2 rounded">
+                                      <ScrollArea className="max-h-48">
+                                        <pre className="text-sm text-chat-tool-result overflow-x-auto">
+                                          {typeof toolCall.result === 'string'
+                                            ? toolCall.result
+                                            : JSON.stringify(toolCall.result, null, 2)}
+                                        </pre>
+                                      </ScrollArea>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             </CollapsibleContent>
                           </div>
