@@ -168,7 +168,11 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
           for (const line of lines) {
             if (line.startsWith('data: ')) {
               try {
-                const data = JSON.parse(line.slice(6));
+                const jsonStr = line.slice(6).trim();
+                if (!jsonStr) continue; // Skip empty data lines
+                
+                const data = JSON.parse(jsonStr);
+                console.log('Received stream data:', data);
                 
                 if (data.type === 'content' && data.content) {
                   fullContent += data.content;
