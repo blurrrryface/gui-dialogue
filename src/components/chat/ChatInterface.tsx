@@ -219,11 +219,16 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                   };
                   
                   console.log(`Tool call update: ID=${toolCall.id}, Status=${toolCall.status}, Result=${!!toolCall.result}, ExistingIndex=${existingIndex}`);
+                  console.log('Full tool call data:', toolCallData);
                   
                   if (existingIndex !== -1) {
-                    // Update existing tool call
-                    toolCalls[existingIndex] = toolCallData;
-                    console.log('Updated existing tool call:', toolCallData);
+                    // Update existing tool call, preserving existing result if new one is empty
+                    const existingToolCall = toolCalls[existingIndex];
+                    toolCalls[existingIndex] = {
+                      ...toolCallData,
+                      result: toolCall.result || existingToolCall.result
+                    };
+                    console.log('Updated existing tool call:', toolCalls[existingIndex]);
                   } else {
                     // Add new tool call
                     toolCalls.push(toolCallData);
