@@ -177,6 +177,21 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                 if (data.type === 'content' && data.content) {
                   fullContent += data.content;
                   onStreamUpdate(fullContent);
+                  
+                  // Auto-complete any pending tool calls when content starts coming in
+                  toolCalls.forEach(tc => {
+                    if (tc.status === 'pending') {
+                      tc.status = 'completed';
+                    }
+                  });
+                  
+                  // Update message with completed tool calls
+                  if (currentThreadId && toolCalls.length > 0) {
+                    updateMessage(currentThreadId, messageId, {
+                      content: fullContent,
+                      toolCalls: [...toolCalls]
+                    });
+                  }
                 } else if (data.type === 'tool_call' && data.toolCall) {
                   const toolCall = data.toolCall;
                   let args = {};
