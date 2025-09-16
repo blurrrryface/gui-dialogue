@@ -196,7 +196,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                     name: toolCall.name || 'unknown_tool',
                     args: args,
                     result: toolCall.result,
-                    status: toolCall.status || (toolCall.result ? 'completed' : 'pending')
+                    status: toolCall.status as 'pending' | 'completed' | 'error' || (toolCall.result ? 'completed' : 'pending')
                   };
                   
                   if (existingIndex !== -1) {
