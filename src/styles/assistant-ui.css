@@ -102,7 +102,7 @@
 
 /* Messages styling */
 .aui-message-content {
-  @apply prose prose-sm dark:prose-invert max-w-none;
+  @apply max-w-none text-sm leading-relaxed;
 }
 
 .aui-message-content p {

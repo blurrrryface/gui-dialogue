@@ -156,19 +156,28 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
       const decoder = new TextDecoder();
       let fullContent = '';
       let toolCalls: ToolCall[] = [];
+      let buffer = ''; // Buffer for incomplete lines
 
       if (reader) {
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
 
-          const chunk = decoder.decode(value);
-          const lines = chunk.split('\n');
+          const chunk = decoder.decode(value, { stream: true });
+          buffer += chunk;
+          
+          // Split by newlines and keep the last incomplete line in buffer
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || ''; // Keep the last incomplete line in buffer
 
           for (const line of lines) {
             if (line.startsWith('data: ')) {
               try {
-                const data = JSON.parse(line.slice(6));
+                const jsonStr = line.slice(6).trim();
+                if (jsonStr === '') continue; // Skip empty data lines
+                
+                const data = JSON.parse(jsonStr);
+                console.log('Parsed stream data:', data.type, data.toolCall?.status || '');
                 
                 if (data.type === 'content' && data.content) {
                   fullContent += data.content;
@@ -199,6 +208,9 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                     status: toolCall.status || (toolCall.result ? 'completed' : 'pending')
                   };
                   
+                  console.log('Tool call update:', toolCallData.name, toolCallData.status, 
+                    toolCallData.result ? `result length: ${JSON.stringify(toolCallData.result).length}` : 'no result');
+                  
                   if (existingIndex !== -1) {
                     // Update existing tool call
                     toolCalls[existingIndex] = toolCallData;
@@ -216,9 +228,23 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                   }
                 }
               } catch (e) {
-                // Skip invalid JSON lines
+                console.error('JSON parse error:', e, 'Line:', line.slice(0, 200) + '...');
               }
             }
+          }
+        }
+        
+        // Process any remaining data in buffer
+        if (buffer.startsWith('data: ')) {
+          try {
+            const jsonStr = buffer.slice(6).trim();
+            if (jsonStr) {
+              const data = JSON.parse(jsonStr);
+              console.log('Final buffer data:', data.type);
+              // Process final data if needed
+            }
+          } catch (e) {
+            console.error('Final buffer parse error:', e);
           }
         }
       }
