@@ -476,8 +476,8 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                                    <div className="text-sm">
                                      <strong className="text-chat-tool-result">Result:</strong>
                                      <div className="mt-1 bg-chat-tool-result/10 p-2 rounded">
-                                       <ScrollArea className="max-h-48">
-                                         <pre className="text-sm text-chat-tool-result overflow-x-auto">
+                                       <ScrollArea className="max-h-96">
+                                         <pre className="text-sm text-chat-tool-result overflow-x-auto whitespace-pre-wrap">
                                            {typeof toolCall.result === 'string'
                                              ? toolCall.result
                                              : JSON.stringify(toolCall.result, null, 2)}
