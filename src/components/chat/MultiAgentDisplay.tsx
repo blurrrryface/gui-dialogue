@@ -273,7 +273,17 @@ export function MultiAgentDisplay({ messages, className }: MultiAgentDisplayProp
             toolCalls: []
           };
         }
-        agentSections[agentName].toolCalls.push(message.toolCall);
+        
+        // Find existing tool call with same ID and update it, or add new one
+        const existingIndex = agentSections[agentName].toolCalls.findIndex(
+          tc => tc?.id === message.toolCall?.id
+        );
+        
+        if (existingIndex >= 0) {
+          agentSections[agentName].toolCalls[existingIndex] = message.toolCall;
+        } else {
+          agentSections[agentName].toolCalls.push(message.toolCall);
+        }
       }
       
       if (message.type === 'agent_call' && message.agentCall) {
