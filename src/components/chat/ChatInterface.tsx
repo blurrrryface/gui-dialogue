@@ -190,6 +190,14 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                 if (data.type === 'content' && data.content) {
                   fullContent += data.content;
                   onStreamUpdate(fullContent);
+                  
+                  // Also update tool calls in real-time if any exist
+                  if (currentThreadId && toolCalls.length > 0) {
+                    updateMessage(currentThreadId, messageId, {
+                      content: fullContent,
+                      toolCalls: [...toolCalls]
+                    });
+                  }
                 } else if (data.type === 'tool_call' && data.toolCall) {
                   const toolCall = data.toolCall;
                   let args = {};
