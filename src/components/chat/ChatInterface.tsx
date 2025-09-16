@@ -464,30 +464,21 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                             
                             <CollapsibleContent>
                               <div className="px-3 pb-3 space-y-2 border-t border-chat-tool-call/10">
-                                {toolCall.args && Object.keys(toolCall.args).length > 0 && (
-                                  <div className="text-sm text-muted-foreground">
-                                    <strong>Arguments:</strong>
-                                    <ScrollArea className="mt-1 max-h-32">
-                                      <pre className="text-sm overflow-x-auto bg-muted/30 p-2 rounded">
-                                        {JSON.stringify(toolCall.args, null, 2)}
-                                      </pre>
-                                    </ScrollArea>
-                                  </div>
-                                )}
-                                {toolCall.result && (
-                                  <div className="text-sm">
-                                    <strong className="text-chat-tool-result">Result:</strong>
-                                    <div className="mt-1 bg-chat-tool-result/10 p-2 rounded">
-                                      <ScrollArea className="max-h-48">
-                                        <pre className="text-sm text-chat-tool-result overflow-x-auto">
-                                          {typeof toolCall.result === 'string'
-                                            ? toolCall.result
-                                            : JSON.stringify(toolCall.result, null, 2)}
-                                        </pre>
-                                      </ScrollArea>
-                                    </div>
-                                  </div>
-                                )}
+                                 {toolCall.args && Object.keys(toolCall.args).length > 0 && (
+                                   <div className="text-sm text-muted-foreground">
+                                     <strong>Arguments:</strong>
+                                     <ScrollArea className="mt-1 max-h-32">
+                                       <pre className="text-sm overflow-x-auto bg-muted/30 p-2 rounded">
+                                         {JSON.stringify(toolCall.args, null, 2)}
+                                       </pre>
+                                     </ScrollArea>
+                                   </div>
+                                 )}
+                                 {toolCall.status === 'completed' && (
+                                   <div className="text-sm text-muted-foreground">
+                                     <em>Tool executed successfully. Results shown in the assistant's response below.</em>
+                                   </div>
+                                 )}
                               </div>
                             </CollapsibleContent>
                           </div>
