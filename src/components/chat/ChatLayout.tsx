@@ -28,12 +28,12 @@ export function ChatLayout() {
           "fixed inset-y-0 left-0 z-50 bg-sidebar-background border-r border-border transform transition-transform duration-300 ease-in-out flex-shrink-0",
           "lg:static lg:inset-0",
           sidebarOpen 
-            ? `translate-x-0 ${branchSidebarOpen ? 'w-64' : 'w-80'}` 
+            ? `translate-x-0 ${branchSidebarOpen ? 'w-64' : 'w-96'}` 
             : "-translate-x-full lg:translate-x-0 lg:w-0",
           "lg:transition-all lg:duration-300"
         )}>
           <div className={cn(
-            `h-full transition-opacity duration-300 ${branchSidebarOpen ? 'w-64' : 'w-80'}`,
+            `h-full transition-opacity duration-300 ${branchSidebarOpen ? 'w-64' : 'w-96'}`,
             sidebarOpen ? "opacity-100" : "lg:opacity-0 lg:invisible"
           )}>
             <Sidebar />
