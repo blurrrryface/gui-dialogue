@@ -141,6 +141,7 @@ export const useChatStore = create<ChatState>()(
       },
 
       updateMessage: (threadId: string, messageId: string, updates: Partial<ChatMessage>) => {
+        console.log('Store updateMessage called:', { threadId, messageId, updates: Object.keys(updates) });
         set((state) => ({
           threads: state.threads.map(thread =>
             thread.id === threadId
@@ -154,6 +155,7 @@ export const useChatStore = create<ChatState>()(
               : thread
           ),
         }));
+        console.log('Store updateMessage completed');
       },
 
       setLoading: (loading: boolean) => {
