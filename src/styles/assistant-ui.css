@@ -68,11 +68,17 @@
 
 /* Tool call specific styling */
 .aui-tool-call {
-  @apply chat-tool-call border rounded-md p-3 my-2;
+  @apply border rounded-md p-3 my-2;
+  background-color: hsl(var(--chat-tool-call) / 0.1);
+  border-color: hsl(var(--chat-tool-call) / 0.2);
+  color: hsl(var(--chat-tool-call));
 }
 
 .aui-tool-result {
-  @apply chat-tool-result border rounded-md p-3;
+  @apply border rounded-md p-3;
+  background-color: hsl(var(--chat-tool-result) / 0.1);
+  border-color: hsl(var(--chat-tool-result) / 0.2);
+  color: hsl(var(--chat-tool-result));
 }
 
 /* Welcome message styling */

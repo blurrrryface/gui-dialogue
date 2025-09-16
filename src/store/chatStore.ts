@@ -6,6 +6,8 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   toolCalls?: ToolCall[];
+  agentCalls?: AgentCall[];
+  currentAgent?: string;
   attachments?: FileAttachment[];
   timestamp: number;
 }
@@ -25,6 +27,13 @@ export interface ToolCall {
   args: Record<string, any>;
   result?: any;
   status: 'pending' | 'completed' | 'error';
+}
+
+export interface AgentCall {
+  id: string;
+  from_agent: string;
+  to_agent: string;
+  timestamp: number;
 }
 
 export interface ChatThread {

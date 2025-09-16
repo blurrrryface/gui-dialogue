@@ -48,6 +48,11 @@ All colors MUST be HSL for theme consistency.
     --chat-bubble-assistant-foreground: 210 40% 95%;
     --chat-tool-call: 260 100% 75%;
     --chat-tool-result: 150 60% 50%;
+    --chat-agent-1: 220 90% 56%; /* Primary agent - blue */
+    --chat-agent-2: 280 100% 75%; /* Secondary agent - purple */
+    --chat-agent-3: 150 60% 50%; /* Third agent - green */
+    --chat-agent-4: 30 100% 60%; /* Fourth agent - orange */
+    --chat-agent-call: 200 100% 70%; /* Agent transitions - cyan */
 
     /* Sidebar colors */
     --sidebar-background: 220 14% 6%;

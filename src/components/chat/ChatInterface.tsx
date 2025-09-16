@@ -6,7 +6,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Send, Loader2, User, Bot, Wifi, WifiOff, ChevronDown, ChevronRight, Paperclip, X, FileText, Image } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { useChatStore, useCurrentThread, ChatMessage, ToolCall, FileAttachment } from '@/store/chatStore';
+import { useChatStore, useCurrentThread, ChatMessage, ToolCall, AgentCall, FileAttachment } from '@/store/chatStore';
 import { getMockResponse, simulateStreamingResponse } from '@/services/mockData';
 
 interface ChatInterfaceProps {
@@ -177,7 +177,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                 if (jsonStr === '') continue; // Skip empty data lines
                 
                 const data = JSON.parse(jsonStr);
-                console.log('Parsed stream data:', data.type, data.toolCall?.status || '');
+                console.log('Parsed stream data:', data.type, data.toolCall?.status || data.agentCall || '');
                 
                 if (data.type === 'content' && data.content) {
                   fullContent += data.content;
@@ -224,6 +224,31 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                     updateMessage(currentThreadId, messageId, {
                       content: fullContent,
                       toolCalls: [...toolCalls]
+                    });
+                  }
+                } else if (data.type === 'agent_call' && data.agentCall) {
+                  // Handle agent transitions
+                  const agentCall = {
+                    id: `agent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                    from_agent: data.agentCall.from_agent || 'unknown',
+                    to_agent: data.agentCall.to_agent || 'unknown',
+                    timestamp: Date.now()
+                  };
+                  
+                  console.log('Agent transition:', agentCall.from_agent, '→', agentCall.to_agent);
+                  
+                  // Update message with agent calls and current agent
+                  if (currentThreadId) {
+                    const currentState = useChatStore.getState();
+                    const thread = currentState.threads.find(t => t.id === currentThreadId);
+                    const message = thread?.messages.find(m => m.id === messageId);
+                    const existingAgentCalls = message?.agentCalls || [];
+                    
+                    updateMessage(currentThreadId, messageId, {
+                      content: fullContent,
+                      toolCalls: [...toolCalls],
+                      agentCalls: [...existingAgentCalls, agentCall],
+                      currentAgent: agentCall.to_agent
                     });
                   }
                 }
@@ -427,7 +452,57 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
             messages.map((message) => {
               const messageItems = [];
               
-              // First render tool calls as separate items (if assistant message)
+              // First render agent calls (if assistant message)
+              if (message.role === 'assistant' && message.agentCalls && message.agentCalls.length > 0) {
+                message.agentCalls.forEach((agentCall) => {
+                  messageItems.push(
+                    <div
+                      key={`${message.id}-${agentCall.id}`}
+                      className="flex gap-3 animate-fade-in justify-start mb-2"
+                    >
+                      <Avatar className="w-8 h-8 flex-shrink-0" style={{
+                        backgroundColor: `hsl(var(--chat-agent-call) / 0.2)`
+                      }}>
+                        <AvatarFallback style={{
+                          backgroundColor: `hsl(var(--chat-agent-call) / 0.2)`,
+                          color: `hsl(var(--chat-agent-call))`
+                        }}>
+                          ↻
+                        </AvatarFallback>
+                      </Avatar>
+                      
+                      <div className="max-w-3xl min-w-0 flex-1">
+                        <div 
+                          className="border rounded-2xl p-3 text-sm"
+                          style={{
+                            backgroundColor: `hsl(var(--chat-agent-call) / 0.1)`,
+                            borderColor: `hsl(var(--chat-agent-call) / 0.2)`,
+                            color: `hsl(var(--chat-agent-call))`
+                          }}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{agentCall.from_agent}</span>
+                            <span className="text-sm">→</span>
+                            <span className="font-medium">{agentCall.to_agent}</span>
+                          </div>
+                          <div className="text-xs opacity-70 mt-1">
+                            Agent transition
+                          </div>
+                        </div>
+                        
+                        <div className="text-xs text-muted-foreground text-left mt-1">
+                          {new Date(agentCall.timestamp).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                });
+              }
+              
+              // Then render tool calls as separate items (if assistant message)
               if (message.role === 'assistant' && message.toolCalls && message.toolCalls.length > 0) {
                 message.toolCalls.forEach((toolCall) => {
                   const isCompleted = toolCall.status === 'completed';
@@ -503,68 +578,87 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                 });
               }
               
-              // Then render the actual message content (if it exists)
-              if (message.content) {
-                messageItems.push(
-                  <div
-                    key={message.id}
-                    className={cn(
-                      "flex gap-3 animate-fade-in",
-                      message.role === 'user' ? "justify-end" : "justify-start"
-                    )}
-                  >
-                    {message.role === 'assistant' && (
-                      <Avatar className="w-8 h-8 bg-secondary">
-                        <AvatarFallback>
-                          <Bot className="w-4 h-4" />
-                        </AvatarFallback>
-                      </Avatar>
-                    )}
+               // Then render the actual message content (if it exists)
+               if (message.content) {
+                 messageItems.push(
+                   <div
+                     key={message.id}
+                     className={cn(
+                       "flex gap-3 animate-fade-in",
+                       message.role === 'user' ? "justify-end" : "justify-start"
+                     )}
+                   >
+                     {message.role === 'assistant' && (
+                       <Avatar className="w-8 h-8 bg-secondary">
+                         <AvatarFallback>
+                           <Bot className="w-4 h-4" />
+                         </AvatarFallback>
+                       </Avatar>
+                     )}
 
-                    <div className="max-w-3xl space-y-2">
+                     <div className="max-w-3xl space-y-2">
+                       {/* Current Agent Indicator */}
+                       {message.role === 'assistant' && message.currentAgent && (
+                         <div className="flex items-center gap-2">
+                           <div 
+                             className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium"
+                             style={{
+                               backgroundColor: `hsl(var(--chat-agent-1) / 0.1)`,
+                               color: `hsl(var(--chat-agent-1))`,
+                               border: `1px solid hsl(var(--chat-agent-1) / 0.2)`
+                             }}
+                           >
+                             <span className="w-2 h-2 rounded-full" style={{
+                               backgroundColor: `hsl(var(--chat-agent-1))`
+                             }}></span>
+                             {message.currentAgent}
+                           </div>
+                         </div>
+                       )}
+                       
+                        <div
+                          className={cn(
+                            "rounded-2xl px-4 py-3 text-sm",
+                            message.role === 'user'
+                              ? "bg-chat-bubble-user text-chat-bubble-user-foreground ml-auto"
+                              : "bg-chat-bubble-assistant text-chat-bubble-assistant-foreground"
+                          )}
+                        >
+                          {message.content && <p className="whitespace-pre-wrap">{message.content}</p>}
+                          
+                          {/* 显示附件 */}
+                          {message.attachments && message.attachments.length > 0 && (
+                            <div className={cn("mt-2 space-y-2", message.content && "border-t pt-2")}>
+                              {message.attachments.map((attachment) => (
+                                <FileAttachmentItem key={attachment.id} attachment={attachment} />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
                        <div
                          className={cn(
-                           "rounded-2xl px-4 py-3 text-sm",
-                           message.role === 'user'
-                             ? "bg-chat-bubble-user text-chat-bubble-user-foreground ml-auto"
-                             : "bg-chat-bubble-assistant text-chat-bubble-assistant-foreground"
+                           "text-xs text-muted-foreground",
+                           message.role === 'user' ? "text-right" : "text-left"
                          )}
                        >
-                         {message.content && <p className="whitespace-pre-wrap">{message.content}</p>}
-                         
-                         {/* 显示附件 */}
-                         {message.attachments && message.attachments.length > 0 && (
-                           <div className={cn("mt-2 space-y-2", message.content && "border-t pt-2")}>
-                             {message.attachments.map((attachment) => (
-                               <FileAttachmentItem key={attachment.id} attachment={attachment} />
-                             ))}
-                           </div>
-                         )}
+                         {new Date(message.timestamp).toLocaleTimeString([], {
+                           hour: '2-digit',
+                           minute: '2-digit',
+                         })}
                        </div>
+                     </div>
 
-                      <div
-                        className={cn(
-                          "text-xs text-muted-foreground",
-                          message.role === 'user' ? "text-right" : "text-left"
-                        )}
-                      >
-                        {new Date(message.timestamp).toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </div>
-                    </div>
-
-                    {message.role === 'user' && (
-                      <Avatar className="w-8 h-8 bg-primary">
-                        <AvatarFallback className="bg-primary text-primary-foreground">
-                          <User className="w-4 h-4" />
-                        </AvatarFallback>
-                      </Avatar>
-                    )}
-                  </div>
-                );
-              }
+                     {message.role === 'user' && (
+                       <Avatar className="w-8 h-8 bg-primary">
+                         <AvatarFallback className="bg-primary text-primary-foreground">
+                           <User className="w-4 h-4" />
+                         </AvatarFallback>
+                       </Avatar>
+                     )}
+                   </div>
+                 );
+               }
               
               return messageItems;
             }).flat()
