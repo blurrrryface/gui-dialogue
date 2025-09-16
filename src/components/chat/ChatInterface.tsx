@@ -193,6 +193,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                   
                   // Also update tool calls in real-time if any exist
                   if (currentThreadId && toolCalls.length > 0) {
+                    console.log('Content update: also updating toolCalls', toolCalls.length);
                     updateMessage(currentThreadId, messageId, {
                       content: fullContent,
                       toolCalls: [...toolCalls]
@@ -247,6 +248,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                       content: fullContent,
                       toolCalls: [...toolCalls]
                     });
+                    console.log('Real-time update: toolCalls updated', toolCalls.length);
                   }
                 }
               } catch (e) {
