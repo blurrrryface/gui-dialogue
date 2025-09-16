@@ -199,12 +199,16 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                     status: toolCall.status as 'pending' | 'completed' | 'error' || (toolCall.result ? 'completed' : 'pending')
                   };
                   
+                  console.log(`Tool call update: ID=${toolCall.id}, Status=${toolCall.status}, Result=${!!toolCall.result}, ExistingIndex=${existingIndex}`);
+                  
                   if (existingIndex !== -1) {
                     // Update existing tool call
                     toolCalls[existingIndex] = toolCallData;
+                    console.log('Updated existing tool call:', toolCallData);
                   } else {
                     // Add new tool call
                     toolCalls.push(toolCallData);
+                    console.log('Added new tool call:', toolCallData);
                   }
                   
                   // Update message with current tool calls
