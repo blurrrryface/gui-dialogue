@@ -177,21 +177,6 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                 if (data.type === 'content' && data.content) {
                   fullContent += data.content;
                   onStreamUpdate(fullContent);
-                  
-                  // Auto-complete any pending tool calls when content starts coming in
-                  toolCalls.forEach(tc => {
-                    if (tc.status === 'pending') {
-                      tc.status = 'completed';
-                    }
-                  });
-                  
-                  // Update message with completed tool calls
-                  if (currentThreadId && toolCalls.length > 0) {
-                    updateMessage(currentThreadId, messageId, {
-                      content: fullContent,
-                      toolCalls: [...toolCalls]
-                    });
-                  }
                 } else if (data.type === 'tool_call' && data.toolCall) {
                   const toolCall = data.toolCall;
                   let args = {};
@@ -474,9 +459,18 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                                      </ScrollArea>
                                    </div>
                                  )}
-                                 {toolCall.status === 'completed' && (
-                                   <div className="text-sm text-muted-foreground">
-                                     <em>Tool executed successfully. Results shown in the assistant's response below.</em>
+                                 {toolCall.result && (
+                                   <div className="text-sm">
+                                     <strong className="text-chat-tool-result">Result:</strong>
+                                     <div className="mt-1 bg-chat-tool-result/10 p-2 rounded">
+                                       <ScrollArea className="max-h-48">
+                                         <pre className="text-sm text-chat-tool-result overflow-x-auto">
+                                           {typeof toolCall.result === 'string'
+                                             ? toolCall.result
+                                             : JSON.stringify(toolCall.result, null, 2)}
+                                         </pre>
+                                       </ScrollArea>
+                                     </div>
                                    </div>
                                  )}
                               </div>
