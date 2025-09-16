@@ -156,7 +156,6 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
       const decoder = new TextDecoder();
       let fullContent = '';
       let toolCalls: ToolCall[] = [];
-      let buffer = ''; // Buffer for incomplete lines
 
       if (reader) {
         while (true) {
@@ -164,41 +163,19 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
           if (done) break;
 
           const chunk = decoder.decode(value);
-          buffer += chunk;
-          const lines = buffer.split('\n');
-          
-          // Keep the last potentially incomplete line in buffer
-          buffer = lines.pop() || '';
+          const lines = chunk.split('\n');
 
           for (const line of lines) {
             if (line.startsWith('data: ')) {
               try {
                 const jsonStr = line.slice(6).trim();
-                if (!jsonStr) continue; // Skip empty data lines
+                if (!jsonStr) continue;
                 
                 const data = JSON.parse(jsonStr);
-                console.log('Received stream data type:', data.type);
-                if (data.type === 'tool_call') {
-                  console.log('Tool call details:', {
-                    id: data.toolCall?.id,
-                    status: data.toolCall?.status, 
-                    hasResult: !!data.toolCall?.result,
-                    resultLength: data.toolCall?.result ? data.toolCall.result.length : 0
-                  });
-                }
                 
                 if (data.type === 'content' && data.content) {
                   fullContent += data.content;
                   onStreamUpdate(fullContent);
-                  
-                  // Also update tool calls in real-time if any exist
-                  if (currentThreadId && toolCalls.length > 0) {
-                    console.log('Content update: also updating toolCalls', toolCalls.length);
-                    updateMessage(currentThreadId, messageId, {
-                      content: fullContent,
-                      toolCalls: [...toolCalls]
-                    });
-                  }
                 } else if (data.type === 'tool_call' && data.toolCall) {
                   const toolCall = data.toolCall;
                   let args = {};
@@ -225,21 +202,12 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                     status: toolCall.status as 'pending' | 'completed' | 'error' || (toolCall.result ? 'completed' : 'pending')
                   };
                   
-                  console.log(`Tool call update: ID=${toolCall.id}, Status=${toolCall.status}, Result=${!!toolCall.result}, ExistingIndex=${existingIndex}`);
-                  console.log('Full tool call data:', toolCallData);
-                  
                   if (existingIndex !== -1) {
-                    // Update existing tool call, preserving existing result if new one is empty
-                    const existingToolCall = toolCalls[existingIndex];
-                    toolCalls[existingIndex] = {
-                      ...toolCallData,
-                      result: toolCall.result || existingToolCall.result
-                    };
-                    console.log('Updated existing tool call:', toolCalls[existingIndex]);
+                    // Update existing tool call
+                    toolCalls[existingIndex] = toolCallData;
                   } else {
                     // Add new tool call
                     toolCalls.push(toolCallData);
-                    console.log('Added new tool call:', toolCallData);
                   }
                   
                   // Update message with current tool calls
@@ -248,10 +216,6 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                       content: fullContent,
                       toolCalls: [...toolCalls]
                     });
-                    console.log('Real-time update: toolCalls updated', toolCalls.length);
-                    
-                    // Force immediate re-render
-                    setTimeout(() => {}, 0);
                   }
                 }
               } catch (e) {
