@@ -77,9 +77,10 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   };
 
   // 上传文件到服务器
-  const uploadFileToServer = async (file: File): Promise<string> => {
+  const uploadFileToServer = async (file: File, threadId: string): Promise<string> => {
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('thread_id', threadId);
 
     try {
       const response = await fetch(`${API_BASE_URL}/upload`, {
@@ -320,7 +321,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
       for (const attachment of attachments) {
         if (attachment.file) {
           try {
-            const url = await uploadFileToServer(attachment.file);
+            const url = await uploadFileToServer(attachment.file, threadId);
             uploadedAttachments.push({
               ...attachment,
               url: url,
