@@ -41,12 +41,23 @@ export function ToolCallDisplay({ toolCalls, className }: ToolCallDisplayProps) 
     }
   };
 
-  const isValidJSON = (str: string): boolean => {
+  const tryParseJSON = (str: string) => {
+    if (typeof str !== 'string') return null;
+    
+    const trimmed = str.trim();
+    if (!trimmed) return null;
+    
+    // Check if it looks like JSON
+    if (!((trimmed.startsWith('{') && trimmed.endsWith('}')) || 
+          (trimmed.startsWith('[') && trimmed.endsWith(']')))) {
+      return null;
+    }
+    
     try {
-      JSON.parse(str);
-      return true;
+      const parsed = JSON.parse(trimmed);
+      return (typeof parsed === 'object' && parsed !== null) ? parsed : null;
     } catch {
-      return false;
+      return null;
     }
   };
 
@@ -147,27 +158,19 @@ export function ToolCallDisplay({ toolCalls, className }: ToolCallDisplayProps) 
   };
 
   const renderResult = (result: any) => {
-    let parsedData;
-    let shouldRenderAsTable = false;
+    let parsedData = null;
 
-    // Handle different result types
+    // Try to get structured data
     if (typeof result === 'object' && result !== null) {
       // Result is already an object
       parsedData = result;
-      shouldRenderAsTable = true;
     } else if (typeof result === 'string') {
-      // Result is a string, try to parse as JSON
-      if (isValidJSON(result)) {
-        try {
-          parsedData = JSON.parse(result);
-          shouldRenderAsTable = true;
-        } catch {
-          shouldRenderAsTable = false;
-        }
-      }
+      // Try to parse string as JSON
+      parsedData = tryParseJSON(result);
     }
 
-    if (shouldRenderAsTable && parsedData) {
+    // If we have structured data, try to render as table
+    if (parsedData) {
       const tableComponent = renderJSONAsTable(parsedData);
       
       if (tableComponent) {
