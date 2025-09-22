@@ -53,7 +53,7 @@ export function ToolCallDisplay({ toolCalls, className }: ToolCallDisplayProps) 
   const renderJSONAsTable = (data: any) => {
     if (Array.isArray(data)) {
       // JSON array - render as multi-row table
-      if (data.length === 0) return <div className="text-xs text-muted-foreground">Empty array</div>;
+      if (data.length === 0) return <div className="text-xs text-muted-foreground p-4">Empty array</div>;
       
       const firstItem = data[0];
       if (typeof firstItem === 'object' && firstItem !== null) {
@@ -65,19 +65,23 @@ export function ToolCallDisplay({ toolCalls, className }: ToolCallDisplayProps) 
             <TableHeader>
               <TableRow>
                 {headers.map((header) => (
-                  <TableHead key={header} className="text-xs">{header}</TableHead>
+                  <TableHead key={header} className="text-xs font-medium px-3 py-2 bg-muted/50 whitespace-nowrap">
+                    {header}
+                  </TableHead>
                 ))}
               </TableRow>
             </TableHeader>
             <TableBody>
               {data.map((item, index) => (
-                <TableRow key={index}>
+                <TableRow key={index} className="hover:bg-muted/20">
                   {headers.map((header) => (
-                    <TableCell key={header} className="text-xs">
-                      {typeof item[header] === 'object' 
-                        ? JSON.stringify(item[header]) 
-                        : String(item[header] || '')
-                      }
+                    <TableCell key={header} className="text-xs px-3 py-2 max-w-xs">
+                      <div className="truncate" title={String(item[header] || '')}>
+                        {typeof item[header] === 'object' 
+                          ? JSON.stringify(item[header]) 
+                          : String(item[header] || '')
+                        }
+                      </div>
                     </TableCell>
                   ))}
                 </TableRow>
@@ -91,13 +95,15 @@ export function ToolCallDisplay({ toolCalls, className }: ToolCallDisplayProps) 
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-xs">Value</TableHead>
+                <TableHead className="text-xs font-medium px-3 py-2 bg-muted/50">Value</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {data.map((item, index) => (
-                <TableRow key={index}>
-                  <TableCell className="text-xs">{String(item)}</TableCell>
+                <TableRow key={index} className="hover:bg-muted/20">
+                  <TableCell className="text-xs px-3 py-2">
+                    <div className="break-words">{String(item)}</div>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -112,19 +118,23 @@ export function ToolCallDisplay({ toolCalls, className }: ToolCallDisplayProps) 
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="text-xs">Key</TableHead>
-              <TableHead className="text-xs">Value</TableHead>
+              <TableHead className="text-xs font-medium px-3 py-2 bg-muted/50 w-32">Key</TableHead>
+              <TableHead className="text-xs font-medium px-3 py-2 bg-muted/50">Value</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {entries.map(([key, value]) => (
-              <TableRow key={key}>
-                <TableCell className="text-xs font-medium">{key}</TableCell>
-                <TableCell className="text-xs">
-                  {typeof value === 'object' 
-                    ? JSON.stringify(value, null, 2) 
-                    : String(value)
-                  }
+              <TableRow key={key} className="hover:bg-muted/20">
+                <TableCell className="text-xs font-medium px-3 py-2 w-32 align-top">
+                  <div className="break-words">{key}</div>
+                </TableCell>
+                <TableCell className="text-xs px-3 py-2">
+                  <div className="break-words max-w-2xl">
+                    {typeof value === 'object' 
+                      ? <pre className="whitespace-pre-wrap text-xs">{JSON.stringify(value, null, 2)}</pre>
+                      : String(value)
+                    }
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -137,22 +147,42 @@ export function ToolCallDisplay({ toolCalls, className }: ToolCallDisplayProps) 
   };
 
   const renderResult = (result: any) => {
-    const resultString = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
-    
-    if (isValidJSON(resultString)) {
-      const parsedData = JSON.parse(resultString);
+    let parsedData;
+    let shouldRenderAsTable = false;
+
+    // Handle different result types
+    if (typeof result === 'object' && result !== null) {
+      // Result is already an object
+      parsedData = result;
+      shouldRenderAsTable = true;
+    } else if (typeof result === 'string') {
+      // Result is a string, try to parse as JSON
+      if (isValidJSON(result)) {
+        try {
+          parsedData = JSON.parse(result);
+          shouldRenderAsTable = true;
+        } catch {
+          shouldRenderAsTable = false;
+        }
+      }
+    }
+
+    if (shouldRenderAsTable && parsedData) {
       const tableComponent = renderJSONAsTable(parsedData);
       
       if (tableComponent) {
         return (
-          <div className="bg-chat-tool-result/10 border border-chat-tool-result/20 rounded-md overflow-hidden w-full">
-            {tableComponent}
+          <div className="bg-chat-tool-result/10 border border-chat-tool-result/20 rounded-md overflow-hidden w-full max-w-full">
+            <div className="overflow-x-auto">
+              {tableComponent}
+            </div>
           </div>
         );
       }
     }
     
     // Fallback to original pre display
+    const resultString = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
     return (
       <div className="bg-chat-tool-result/10 border border-chat-tool-result/20 rounded-md p-3 w-full min-h-[100px]">
         <pre className="text-xs text-chat-tool-result overflow-x-auto whitespace-pre-wrap break-words">
