@@ -3,7 +3,6 @@ import { ToolCall } from '@/store/chatStore';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Loader2, CheckCircle, XCircle, Wrench, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -39,160 +38,6 @@ export function ToolCallDisplay({ toolCalls, className }: ToolCallDisplayProps) 
       default:
         return 'bg-blue-500/10 text-blue-500 border-blue-500/20';
     }
-  };
-
-  const tryParseJSON = (str: string) => {
-    if (typeof str !== 'string') return null;
-    
-    const trimmed = str.trim();
-    if (!trimmed) return null;
-    
-    // Check if it looks like JSON
-    if (!((trimmed.startsWith('{') && trimmed.endsWith('}')) || 
-          (trimmed.startsWith('[') && trimmed.endsWith(']')))) {
-      return null;
-    }
-    
-    try {
-      const parsed = JSON.parse(trimmed);
-      return (typeof parsed === 'object' && parsed !== null) ? parsed : null;
-    } catch {
-      return null;
-    }
-  };
-
-  const renderJSONAsTable = (data: any) => {
-    if (Array.isArray(data)) {
-      // JSON array - render as multi-row table
-      if (data.length === 0) return <div className="text-xs text-muted-foreground p-4">Empty array</div>;
-      
-      const firstItem = data[0];
-      if (typeof firstItem === 'object' && firstItem !== null) {
-        // Array of objects - use object keys as headers
-        const headers = Object.keys(firstItem);
-        
-        return (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                {headers.map((header) => (
-                  <TableHead key={header} className="text-xs font-medium px-3 py-2 bg-muted/50 whitespace-nowrap">
-                    {header}
-                  </TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.map((item, index) => (
-                <TableRow key={index} className="hover:bg-muted/20">
-                  {headers.map((header) => (
-                    <TableCell key={header} className="text-xs px-3 py-2 max-w-xs">
-                      <div className="truncate" title={String(item[header] || '')}>
-                        {typeof item[header] === 'object' 
-                          ? JSON.stringify(item[header]) 
-                          : String(item[header] || '')
-                        }
-                      </div>
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        );
-      } else {
-        // Array of primitives - render as single column
-        return (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-xs font-medium px-3 py-2 bg-muted/50">Value</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.map((item, index) => (
-                <TableRow key={index} className="hover:bg-muted/20">
-                  <TableCell className="text-xs px-3 py-2">
-                    <div className="break-words">{String(item)}</div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        );
-      }
-    } else if (typeof data === 'object' && data !== null) {
-      // JSON object - render as key-value table
-      const entries = Object.entries(data);
-      
-      return (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="text-xs font-medium px-3 py-2 bg-muted/50 w-32">Key</TableHead>
-              <TableHead className="text-xs font-medium px-3 py-2 bg-muted/50">Value</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {entries.map(([key, value]) => (
-              <TableRow key={key} className="hover:bg-muted/20">
-                <TableCell className="text-xs font-medium px-3 py-2 w-32 align-top">
-                  <div className="break-words">{key}</div>
-                </TableCell>
-                <TableCell className="text-xs px-3 py-2">
-                  <div className="break-words max-w-2xl">
-                    {typeof value === 'object' 
-                      ? <pre className="whitespace-pre-wrap text-xs">{JSON.stringify(value, null, 2)}</pre>
-                      : String(value)
-                    }
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      );
-    }
-    
-    return null;
-  };
-
-  const renderResult = (result: any) => {
-    let parsedData = null;
-
-    // Try to get structured data
-    if (typeof result === 'object' && result !== null) {
-      // Result is already an object
-      parsedData = result;
-    } else if (typeof result === 'string') {
-      // Try to parse string as JSON
-      parsedData = tryParseJSON(result);
-    }
-
-    // If we have structured data, try to render as table
-    if (parsedData) {
-      const tableComponent = renderJSONAsTable(parsedData);
-      
-      if (tableComponent) {
-        return (
-          <div className="bg-chat-tool-result/10 border border-chat-tool-result/20 rounded-md overflow-hidden w-full max-w-full">
-            <div className="overflow-x-auto">
-              {tableComponent}
-            </div>
-          </div>
-        );
-      }
-    }
-    
-    // Fallback to original pre display
-    const resultString = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
-    return (
-      <div className="bg-chat-tool-result/10 border border-chat-tool-result/20 rounded-md p-3 w-full min-h-[100px]">
-        <pre className="text-xs text-chat-tool-result overflow-x-auto whitespace-pre-wrap break-words">
-          {resultString}
-        </pre>
-      </div>
-    );
   };
 
   return (
@@ -242,7 +87,14 @@ export function ToolCallDisplay({ toolCalls, className }: ToolCallDisplayProps) 
                       <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                         Result
                       </h4>
-                      {renderResult(toolCall.result)}
+                      <div className="bg-chat-tool-result/10 border border-chat-tool-result/20 rounded-md p-3 w-full min-h-[100px]">
+                        <pre className="text-xs text-chat-tool-result overflow-x-auto whitespace-pre-wrap break-words">
+                          {typeof toolCall.result === 'string' 
+                            ? toolCall.result 
+                            : JSON.stringify(toolCall.result, null, 2)
+                          }
+                        </pre>
+                      </div>
                     </div>
                   )}
                 </div>
