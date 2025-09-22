@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { useChatStore, useCurrentThread, ChatMessage, ToolCall, AgentCall, FileAttachment, AgentBlock } from '@/store/chatStore';
 import { getMockResponse, simulateStreamingResponse } from '@/services/mockData';
+import { MessageBubble } from './MessageBubble';
 
 interface ChatInterfaceProps {
   className?: string;
@@ -510,217 +511,55 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
             </div>
           ) : (
             messages.map((message) => {
-              const messageItems = [];
-              
-              // First render agent calls (if assistant message)
-              if (message.role === 'assistant' && message.agentCalls && message.agentCalls.length > 0) {
-                message.agentCalls.forEach((agentCall) => {
+              // 如果是助手消息且有 agent 块，为每个 agent 块创建独立的消息
+              if (message.role === 'assistant' && message.agentBlocks && message.agentBlocks.length > 0) {
+                const messageItems = [];
+                
+                message.agentBlocks.forEach((agentBlock, blockIndex) => {
+                  const agentMessage: ChatMessage = {
+                    ...message,
+                    id: `${message.id}_agent_${blockIndex}`,
+                    content: agentBlock.content,
+                    currentAgent: agentBlock.agentName,
+                    agentBlocks: undefined, // 清除 agentBlocks，避免递归渲染
+                  };
+                  
                   messageItems.push(
-                    <div
-                      key={`${message.id}-${agentCall.id}`}
-                      className="flex gap-3 animate-fade-in justify-start mb-2"
-                    >
-                      <Avatar className="w-8 h-8 flex-shrink-0" style={{
-                        backgroundColor: `hsl(var(--chat-agent-call) / 0.2)`
-                      }}>
-                        <AvatarFallback style={{
-                          backgroundColor: `hsl(var(--chat-agent-call) / 0.2)`,
-                          color: `hsl(var(--chat-agent-call))`
-                        }}>
-                          ↻
-                        </AvatarFallback>
-                      </Avatar>
-                      
-                      <div className="max-w-3xl min-w-0 flex-1">
-                        <div 
-                          className="border rounded-2xl p-3 text-sm"
-                          style={{
-                            backgroundColor: `hsl(var(--chat-agent-call) / 0.1)`,
-                            borderColor: `hsl(var(--chat-agent-call) / 0.2)`,
-                            color: `hsl(var(--chat-agent-call))`
-                          }}
-                        >
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{agentCall.from_agent}</span>
-                            <span className="text-sm">→</span>
-                            <span className="font-medium">{agentCall.to_agent}</span>
-                          </div>
-                          <div className="text-xs opacity-70 mt-1">
-                            Agent transition
-                          </div>
-                        </div>
-                        
-                        <div className="text-xs text-muted-foreground text-left mt-1">
-                          {new Date(agentCall.timestamp).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </div>
-                      </div>
-                    </div>
+                    <MessageBubble 
+                      key={agentMessage.id} 
+                      message={agentMessage} 
+                    />
                   );
                 });
-              }
-              
-              // Then render tool calls as separate items (if assistant message)
-              if (message.role === 'assistant' && message.toolCalls && message.toolCalls.length > 0) {
-                message.toolCalls.forEach((toolCall) => {
-                  const isCompleted = toolCall.status === 'completed';
+                
+                // 如果有工具调用，在最后一个 agent 块后显示
+                if (message.toolCalls && message.toolCalls.length > 0) {
+                  const toolCallMessage: ChatMessage = {
+                    ...message,
+                    id: `${message.id}_tools`,
+                    content: '',
+                    agentBlocks: undefined,
+                    currentAgent: undefined,
+                  };
+                  
                   messageItems.push(
-                    <div
-                      key={`${message.id}-${toolCall.id}`}
-                      className="flex gap-3 animate-fade-in justify-start"
-                    >
-                      <Avatar className="w-8 h-8 bg-chat-tool-call/20 flex-shrink-0">
-                        <AvatarFallback className="bg-chat-tool-call/20 text-chat-tool-call">
-                          🔧
-                        </AvatarFallback>
-                      </Avatar>
-                      
-                      <div className="max-w-3xl min-w-0 flex-1">
-                        <Collapsible defaultOpen={!isCompleted}>
-                          <div className="bg-chat-tool-call/10 border border-chat-tool-call/20 rounded-2xl overflow-hidden">
-                            <CollapsibleTrigger className="w-full p-3 flex items-center justify-between hover:bg-chat-tool-call/5 transition-colors">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium text-chat-tool-call">
-                                  {toolCall.name}
-                                </span>
-                                {toolCall.status === 'pending' && (
-                                  <Loader2 className="w-4 h-4 animate-spin text-chat-tool-call" />
-                                )}
-                                {toolCall.status === 'completed' && (
-                                  <span className="text-sm text-green-500">✓</span>
-                                )}
-                              </div>
-                              <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform data-[state=closed]:rotate-[-90deg]" />
-                            </CollapsibleTrigger>
-                            
-                            <CollapsibleContent>
-                              <div className="px-3 pb-3 space-y-2 border-t border-chat-tool-call/10">
-                                {toolCall.args && Object.keys(toolCall.args).length > 0 && (
-                                  <div className="text-sm text-muted-foreground">
-                                    <strong>Arguments:</strong>
-                                    <ScrollArea className="mt-1 max-h-32">
-                                      <pre className="text-sm overflow-x-auto bg-muted/30 p-2 rounded">
-                                        {JSON.stringify(toolCall.args, null, 2)}
-                                      </pre>
-                                    </ScrollArea>
-                                  </div>
-                                )}
-                                {toolCall.result && (
-                                  <div className="text-sm">
-                                    <strong className="text-chat-tool-result">Result:</strong>
-                                    <div className="mt-1 bg-chat-tool-result/10 p-2 rounded">
-                                      <ScrollArea className="max-h-48">
-                                        <pre className="text-sm text-chat-tool-result overflow-x-auto">
-                                          {typeof toolCall.result === 'string'
-                                            ? toolCall.result
-                                            : JSON.stringify(toolCall.result, null, 2)}
-                                        </pre>
-                                      </ScrollArea>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            </CollapsibleContent>
-                          </div>
-                        </Collapsible>
-                        
-                        <div className="text-xs text-muted-foreground text-left mt-1">
-                          {new Date(message.timestamp).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </div>
-                      </div>
-                    </div>
+                    <MessageBubble 
+                      key={toolCallMessage.id} 
+                      message={toolCallMessage} 
+                    />
                   );
-                });
+                }
+                
+                return messageItems;
+              } else {
+                // 普通消息的正常渲染
+                return (
+                  <MessageBubble 
+                    key={message.id} 
+                    message={message} 
+                  />
+                );
               }
-              
-               // Then render the actual message content (if it exists)
-               if (message.content) {
-                 messageItems.push(
-                   <div
-                     key={message.id}
-                     className={cn(
-                       "flex gap-3 animate-fade-in",
-                       message.role === 'user' ? "justify-end" : "justify-start"
-                     )}
-                   >
-                     {message.role === 'assistant' && (
-                       <Avatar className="w-8 h-8 bg-secondary">
-                         <AvatarFallback>
-                           <Bot className="w-4 h-4" />
-                         </AvatarFallback>
-                       </Avatar>
-                     )}
-
-                     <div className="max-w-3xl space-y-2">
-                       {/* Current Agent Indicator */}
-                       {message.role === 'assistant' && message.currentAgent && (
-                         <div className="flex items-center gap-2">
-                           <div 
-                             className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium"
-                             style={{
-                               backgroundColor: `hsl(var(--chat-agent-1) / 0.1)`,
-                               color: `hsl(var(--chat-agent-1))`,
-                               border: `1px solid hsl(var(--chat-agent-1) / 0.2)`
-                             }}
-                           >
-                             <span className="w-2 h-2 rounded-full" style={{
-                               backgroundColor: `hsl(var(--chat-agent-1))`
-                             }}></span>
-                             {message.currentAgent}
-                           </div>
-                         </div>
-                       )}
-                       
-                        <div
-                          className={cn(
-                            "rounded-2xl px-4 py-3 text-sm",
-                            message.role === 'user'
-                              ? "bg-chat-bubble-user text-chat-bubble-user-foreground ml-auto"
-                              : "bg-chat-bubble-assistant text-chat-bubble-assistant-foreground"
-                          )}
-                        >
-                          {message.content && <p className="whitespace-pre-wrap">{message.content}</p>}
-                          
-                          {/* 显示附件 */}
-                          {message.attachments && message.attachments.length > 0 && (
-                            <div className={cn("mt-2 space-y-2", message.content && "border-t pt-2")}>
-                              {message.attachments.map((attachment) => (
-                                <FileAttachmentItem key={attachment.id} attachment={attachment} />
-                              ))}
-                            </div>
-                          )}
-                        </div>
-
-                       <div
-                         className={cn(
-                           "text-xs text-muted-foreground",
-                           message.role === 'user' ? "text-right" : "text-left"
-                         )}
-                       >
-                         {new Date(message.timestamp).toLocaleTimeString([], {
-                           hour: '2-digit',
-                           minute: '2-digit',
-                         })}
-                       </div>
-                     </div>
-
-                     {message.role === 'user' && (
-                       <Avatar className="w-8 h-8 bg-primary">
-                         <AvatarFallback className="bg-primary text-primary-foreground">
-                           <User className="w-4 h-4" />
-                         </AvatarFallback>
-                       </Avatar>
-                     )}
-                   </div>
-                 );
-               }
-              
-              return messageItems;
             }).flat()
           )}
 
