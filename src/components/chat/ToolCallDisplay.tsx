@@ -2,7 +2,8 @@ import React from 'react';
 import { ToolCall } from '@/store/chatStore';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, CheckCircle, XCircle, Wrench } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Loader2, CheckCircle, XCircle, Wrench, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ToolCallDisplayProps {
@@ -42,54 +43,64 @@ export function ToolCallDisplay({ toolCalls, className }: ToolCallDisplayProps) 
   return (
     <div className={cn("space-y-3", className)}>
       {toolCalls.map((toolCall) => (
-        <Card key={toolCall.id} className="p-4 bg-card/50 border-border/50">
-          <div className="space-y-3">
-            {/* Tool Call Header */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Wrench className="w-4 h-4 text-chat-tool-call" />
-                <span className="font-medium text-sm">{toolCall.name}</span>
-              </div>
-              <Badge 
-                variant="outline" 
-                className={cn("text-xs", getStatusColor(toolCall.status))}
-              >
-                {getStatusIcon(toolCall.status)}
-                <span className="ml-1 capitalize">{toolCall.status}</span>
-              </Badge>
-            </div>
-
-            {/* Arguments */}
-            {toolCall.args && Object.keys(toolCall.args).length > 0 && (
-              <div className="space-y-2">
-                <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Arguments
-                </h4>
-                <div className="bg-muted/30 rounded-md p-3">
-                  <pre className="text-xs text-muted-foreground overflow-x-auto">
-                    {JSON.stringify(toolCall.args, null, 2)}
-                  </pre>
+        <Card key={toolCall.id} className="overflow-hidden bg-card/50 border-border/50">
+          <Collapsible defaultOpen={false}>
+            <CollapsibleTrigger className="w-full">
+              <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <Wrench className="w-4 h-4 text-chat-tool-call" />
+                  <span className="font-medium text-sm">{toolCall.name}</span>
+                  <Badge 
+                    variant="outline" 
+                    className={cn("text-xs", getStatusColor(toolCall.status))}
+                  >
+                    {getStatusIcon(toolCall.status)}
+                    <span className="ml-1 capitalize">{toolCall.status}</span>
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-2">
+                  <ChevronDown className="w-4 h-4 text-muted-foreground transform transition-transform group-data-[state=open]:rotate-180" />
                 </div>
               </div>
-            )}
+            </CollapsibleTrigger>
+            
+            <CollapsibleContent>
+              <div className="px-4 pb-4 border-t border-border/50">
+                <div className="mt-3 space-y-3">
+                  {/* Arguments */}
+                  {toolCall.args && Object.keys(toolCall.args).length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        Arguments
+                      </h4>
+                      <div className="bg-muted/30 rounded-md p-3">
+                        <pre className="text-xs text-muted-foreground overflow-x-auto">
+                          {JSON.stringify(toolCall.args, null, 2)}
+                        </pre>
+                      </div>
+                    </div>
+                  )}
 
-            {/* Result */}
-            {toolCall.result && (
-              <div className="space-y-2">
-                <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Result
-                </h4>
-                <div className="bg-chat-tool-result/10 border border-chat-tool-result/20 rounded-md p-3">
-                  <pre className="text-xs text-chat-tool-result overflow-x-auto whitespace-pre-wrap">
-                    {typeof toolCall.result === 'string' 
-                      ? toolCall.result 
-                      : JSON.stringify(toolCall.result, null, 2)
-                    }
-                  </pre>
+                  {/* Result */}
+                  {toolCall.result && (
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        Result
+                      </h4>
+                      <div className="bg-chat-tool-result/10 border border-chat-tool-result/20 rounded-md p-3">
+                        <pre className="text-xs text-chat-tool-result overflow-x-auto whitespace-pre-wrap">
+                          {typeof toolCall.result === 'string' 
+                            ? toolCall.result 
+                            : JSON.stringify(toolCall.result, null, 2)
+                          }
+                        </pre>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
-            )}
-          </div>
+            </CollapsibleContent>
+          </Collapsible>
         </Card>
       ))}
     </div>

@@ -511,44 +511,78 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
             </div>
           ) : (
             messages.map((message) => {
-              // 如果是助手消息且有 agent 块，为每个 agent 块创建独立的消息
-              if (message.role === 'assistant' && message.agentBlocks && message.agentBlocks.length > 0) {
+              // 如果是助手消息且有 agent 块或工具调用，需要按顺序渲染
+              if (message.role === 'assistant' && (message.agentBlocks?.length || message.toolCalls?.length)) {
                 const messageItems = [];
                 
-                message.agentBlocks.forEach((agentBlock, blockIndex) => {
-                  const agentMessage: ChatMessage = {
-                    ...message,
-                    id: `${message.id}_agent_${blockIndex}`,
-                    content: agentBlock.content,
-                    currentAgent: agentBlock.agentName,
-                    agentBlocks: undefined, // 清除 agentBlocks，避免递归渲染
-                  };
-                  
-                  messageItems.push(
-                    <MessageBubble 
-                      key={agentMessage.id} 
-                      message={agentMessage} 
-                    />
-                  );
-                });
+                // 创建一个包含所有内容的数组，按顺序排列
+                const allItems: Array<{
+                  type: 'agent' | 'tool';
+                  data: any;
+                  order: number;
+                }> = [];
                 
-                // 如果有工具调用，在最后一个 agent 块后显示
-                if (message.toolCalls && message.toolCalls.length > 0) {
-                  const toolCallMessage: ChatMessage = {
-                    ...message,
-                    id: `${message.id}_tools`,
-                    content: '',
-                    agentBlocks: undefined,
-                    currentAgent: undefined,
-                  };
-                  
-                  messageItems.push(
-                    <MessageBubble 
-                      key={toolCallMessage.id} 
-                      message={toolCallMessage} 
-                    />
-                  );
+                // 添加 agent 块
+                if (message.agentBlocks) {
+                  message.agentBlocks.forEach((agentBlock, index) => {
+                    allItems.push({
+                      type: 'agent',
+                      data: agentBlock,
+                      order: index * 2 // agent 块的顺序
+                    });
+                  });
                 }
+                
+                // 添加工具调用
+                if (message.toolCalls) {
+                  message.toolCalls.forEach((toolCall, index) => {
+                    allItems.push({
+                      type: 'tool',
+                      data: toolCall,
+                      order: (message.agentBlocks?.length || 0) * 2 + index * 2 + 1 // 工具调用在 agent 块之后
+                    });
+                  });
+                }
+                
+                // 按顺序排序
+                allItems.sort((a, b) => a.order - b.order);
+                
+                // 渲染所有项目
+                allItems.forEach((item, itemIndex) => {
+                  if (item.type === 'agent') {
+                    const agentMessage: ChatMessage = {
+                      ...message,
+                      id: `${message.id}_agent_${itemIndex}`,
+                      content: item.data.content,
+                      currentAgent: item.data.agentName,
+                      agentBlocks: undefined,
+                      toolCalls: undefined,
+                    };
+                    
+                    messageItems.push(
+                      <MessageBubble 
+                        key={agentMessage.id} 
+                        message={agentMessage} 
+                      />
+                    );
+                  } else if (item.type === 'tool') {
+                    const toolMessage: ChatMessage = {
+                      ...message,
+                      id: `${message.id}_tool_${itemIndex}`,
+                      content: '',
+                      agentBlocks: undefined,
+                      toolCalls: [item.data],
+                      currentAgent: undefined,
+                    };
+                    
+                    messageItems.push(
+                      <MessageBubble 
+                        key={toolMessage.id} 
+                        message={toolMessage} 
+                      />
+                    );
+                  }
+                });
                 
                 return messageItems;
               } else {
