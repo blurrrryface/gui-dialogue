@@ -192,16 +192,6 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                   const endingAgent = data.agent_name.trim();
                   console.log('Agent ended:', endingAgent);
                 } else if (data.type === 'content' && data.content) {
-                  // 检查是否需要切换agent（在有流式输出时）
-                  if (data.agent_name && data.agent_name.trim() !== currentAgent) {
-                    const newAgent = data.agent_name.trim();
-                    console.log('Agent switched from', currentAgent, 'to', newAgent, 'during content stream');
-                    currentAgent = newAgent;
-                    if (!agentContents[currentAgent]) {
-                      agentContents[currentAgent] = '';
-                    }
-                  }
-                  
                   if (currentAgent) {
                     // Add content to current agent's content
                     agentContents[currentAgent] = (agentContents[currentAgent] || '') + data.content;
