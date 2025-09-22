@@ -3,6 +3,7 @@ import { ToolCall } from '@/store/chatStore';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Loader2, CheckCircle, XCircle, Wrench, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -38,6 +39,127 @@ export function ToolCallDisplay({ toolCalls, className }: ToolCallDisplayProps) 
       default:
         return 'bg-blue-500/10 text-blue-500 border-blue-500/20';
     }
+  };
+
+  const isValidJSON = (str: string): boolean => {
+    try {
+      JSON.parse(str);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const renderJSONAsTable = (data: any) => {
+    if (Array.isArray(data)) {
+      // JSON array - render as multi-row table
+      if (data.length === 0) return <div className="text-xs text-muted-foreground">Empty array</div>;
+      
+      const firstItem = data[0];
+      if (typeof firstItem === 'object' && firstItem !== null) {
+        // Array of objects - use object keys as headers
+        const headers = Object.keys(firstItem);
+        
+        return (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {headers.map((header) => (
+                  <TableHead key={header} className="text-xs">{header}</TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.map((item, index) => (
+                <TableRow key={index}>
+                  {headers.map((header) => (
+                    <TableCell key={header} className="text-xs">
+                      {typeof item[header] === 'object' 
+                        ? JSON.stringify(item[header]) 
+                        : String(item[header] || '')
+                      }
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        );
+      } else {
+        // Array of primitives - render as single column
+        return (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-xs">Value</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.map((item, index) => (
+                <TableRow key={index}>
+                  <TableCell className="text-xs">{String(item)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        );
+      }
+    } else if (typeof data === 'object' && data !== null) {
+      // JSON object - render as key-value table
+      const entries = Object.entries(data);
+      
+      return (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="text-xs">Key</TableHead>
+              <TableHead className="text-xs">Value</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {entries.map(([key, value]) => (
+              <TableRow key={key}>
+                <TableCell className="text-xs font-medium">{key}</TableCell>
+                <TableCell className="text-xs">
+                  {typeof value === 'object' 
+                    ? JSON.stringify(value, null, 2) 
+                    : String(value)
+                  }
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      );
+    }
+    
+    return null;
+  };
+
+  const renderResult = (result: any) => {
+    const resultString = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
+    
+    if (isValidJSON(resultString)) {
+      const parsedData = JSON.parse(resultString);
+      const tableComponent = renderJSONAsTable(parsedData);
+      
+      if (tableComponent) {
+        return (
+          <div className="bg-chat-tool-result/10 border border-chat-tool-result/20 rounded-md overflow-hidden w-full">
+            {tableComponent}
+          </div>
+        );
+      }
+    }
+    
+    // Fallback to original pre display
+    return (
+      <div className="bg-chat-tool-result/10 border border-chat-tool-result/20 rounded-md p-3 w-full min-h-[100px]">
+        <pre className="text-xs text-chat-tool-result overflow-x-auto whitespace-pre-wrap break-words">
+          {resultString}
+        </pre>
+      </div>
+    );
   };
 
   return (
@@ -87,14 +209,7 @@ export function ToolCallDisplay({ toolCalls, className }: ToolCallDisplayProps) 
                       <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                         Result
                       </h4>
-                      <div className="bg-chat-tool-result/10 border border-chat-tool-result/20 rounded-md p-3 w-full min-h-[100px]">
-                        <pre className="text-xs text-chat-tool-result overflow-x-auto whitespace-pre-wrap break-words">
-                          {typeof toolCall.result === 'string' 
-                            ? toolCall.result 
-                            : JSON.stringify(toolCall.result, null, 2)
-                          }
-                        </pre>
-                      </div>
+                      {renderResult(toolCall.result)}
                     </div>
                   )}
                 </div>
