@@ -194,14 +194,14 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                   console.log('Agent ended:', endingAgent);
                 } else if (data.type === 'content' && data.content) {
                   // 检查 agent 名称是否变化（在有内容输出的情况下）
-                  const streamAgentName = data.agent_name ? data.agent_name.trim() : currentAgent;
+                  const streamAgentName = data.agent_name ? data.agent_name.trim() : '';
                   
-                  if (streamAgentName && streamAgentName !== currentAgent && hasContentInCurrentAgent) {
-                    // Agent 名称发生变化且之前有内容输出，创建新的 agent 块
+                  // 如果有明确的agent名称，且与当前agent不同，立即切换
+                  if (streamAgentName && streamAgentName !== currentAgent) {
+                    console.log('Agent changed during content stream from:', currentAgent, 'to:', streamAgentName);
                     currentAgent = streamAgentName;
-                    currentAgentIndex = -1; // 重置索引，会在下面创建新块
+                    currentAgentIndex = -1; // 重置索引，强制创建新块
                     hasContentInCurrentAgent = false;
-                    console.log('Agent changed during content stream to:', currentAgent);
                   }
                   
                   if (currentAgent) {
@@ -210,24 +210,19 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                     
                     // 找到或创建当前 agent 的块
                     if (currentAgentIndex === -1) {
-                      // 查找是否已存在该 agent 的块
-                      const existingIndex = agentBlocks.findIndex(block => block.agentName === currentAgent);
-                      if (existingIndex !== -1) {
-                        currentAgentIndex = existingIndex;
-                      } else {
-                        // 创建新的 agent 块
-                        agentBlocks.push({
-                          agentName: currentAgent,
-                          content: ''
-                        });
-                        currentAgentIndex = agentBlocks.length - 1;
-                      }
+                      // 总是创建新的 agent 块（不重用之前的块）
+                      agentBlocks.push({
+                        agentName: currentAgent,
+                        content: ''
+                      });
+                      currentAgentIndex = agentBlocks.length - 1;
+                      console.log('Created new agent block for:', currentAgent, 'index:', currentAgentIndex);
                     }
                     
                     // 添加内容到当前 agent 块
                     agentBlocks[currentAgentIndex].content += data.content;
                     
-                    // 构建完整内容用于显示
+                    // 构建完整内容用于显示（仅用于备用显示）
                     fullContent = agentBlocks.map(block => block.content).join('\n\n');
                   } else {
                     // 没有 agent 上下文的回退处理
