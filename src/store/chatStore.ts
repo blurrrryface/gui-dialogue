@@ -1,6 +1,11 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
+export interface AgentBlock {
+  agentName: string;
+  content: string;
+}
+
 export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
@@ -8,6 +13,7 @@ export interface ChatMessage {
   toolCalls?: ToolCall[];
   agentCalls?: AgentCall[];
   currentAgent?: string;
+  agentBlocks?: AgentBlock[];
   attachments?: FileAttachment[];
   timestamp: number;
 }

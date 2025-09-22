@@ -1,6 +1,7 @@
 import React from 'react';
 import { ChatMessage } from '@/store/chatStore';
 import { ToolCallDisplay } from './ToolCallDisplay';
+import { AgentDisplay } from './AgentDisplay';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { User, Bot } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -43,45 +44,50 @@ export function MessageBubble({ message, className }: MessageBubbleProps) {
           </div>
         )}
 
-        {/* Text Content */}
-        <div className={cn(
-          "rounded-2xl px-4 py-3 text-sm",
-          isUser 
-            ? "bg-chat-bubble-user text-chat-bubble-user-foreground ml-auto" 
-            : "bg-chat-bubble-assistant text-chat-bubble-assistant-foreground"
-        )}>
-          {isAssistant ? (
-            <div className="prose prose-sm dark:prose-invert max-w-none">
-              <ReactMarkdown 
-                remarkPlugins={[remarkGfm]}
-                components={{
-                  // Custom components for better styling
-                  p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-                  code: ({ children, ...props }) => {
-                    // Check if it's inline code by looking at the parent
-                    const isInline = !props.className?.includes('language-');
-                    return isInline ? (
-                      <code className="bg-muted px-1 py-0.5 rounded text-xs" {...props}>
-                        {children}
-                      </code>
-                    ) : (
-                      <pre className="bg-muted p-3 rounded-md overflow-x-auto">
-                        <code {...props}>{children}</code>
-                      </pre>
-                    );
-                  },
-                  ul: ({ children }) => <ul className="list-disc pl-4 mb-2">{children}</ul>,
-                  ol: ({ children }) => <ol className="list-decimal pl-4 mb-2">{children}</ol>,
-                  li: ({ children }) => <li className="mb-1">{children}</li>,
-                }}
-              >
-                {message.content}
-              </ReactMarkdown>
-            </div>
-          ) : (
-            <p className="whitespace-pre-wrap">{message.content}</p>
-          )}
-        </div>
+        {/* Agent Blocks - 优先显示 agent 块，如果存在的话 */}
+        {isAssistant && message.agentBlocks && message.agentBlocks.length > 0 ? (
+          <AgentDisplay agentBlocks={message.agentBlocks} />
+        ) : (
+          /* Text Content - 只在没有 agent 块时显示 */
+          <div className={cn(
+            "rounded-2xl px-4 py-3 text-sm",
+            isUser 
+              ? "bg-chat-bubble-user text-chat-bubble-user-foreground ml-auto" 
+              : "bg-chat-bubble-assistant text-chat-bubble-assistant-foreground"
+          )}>
+            {isAssistant ? (
+              <div className="prose prose-sm dark:prose-invert max-w-none">
+                <ReactMarkdown 
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    // Custom components for better styling
+                    p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                    code: ({ children, ...props }) => {
+                      // Check if it's inline code by looking at the parent
+                      const isInline = !props.className?.includes('language-');
+                      return isInline ? (
+                        <code className="bg-muted px-1 py-0.5 rounded text-xs" {...props}>
+                          {children}
+                        </code>
+                      ) : (
+                        <pre className="bg-muted p-3 rounded-md overflow-x-auto">
+                          <code {...props}>{children}</code>
+                        </pre>
+                      );
+                    },
+                    ul: ({ children }) => <ul className="list-disc pl-4 mb-2">{children}</ul>,
+                    ol: ({ children }) => <ol className="list-decimal pl-4 mb-2">{children}</ol>,
+                    li: ({ children }) => <li className="mb-1">{children}</li>,
+                  }}
+                >
+                  {message.content}
+                </ReactMarkdown>
+              </div>
+            ) : (
+              <p className="whitespace-pre-wrap">{message.content}</p>
+            )}
+          </div>
+        )}
 
         {/* Tool Calls */}
         {message.toolCalls && message.toolCalls.length > 0 && (

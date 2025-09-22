@@ -6,7 +6,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Send, Loader2, User, Bot, Wifi, WifiOff, ChevronDown, ChevronRight, Paperclip, X, FileText, Image } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { useChatStore, useCurrentThread, ChatMessage, ToolCall, AgentCall, FileAttachment } from '@/store/chatStore';
+import { useChatStore, useCurrentThread, ChatMessage, ToolCall, AgentCall, FileAttachment, AgentBlock } from '@/store/chatStore';
 import { getMockResponse, simulateStreamingResponse } from '@/services/mockData';
 
 interface ChatInterfaceProps {
@@ -159,7 +159,9 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
       let toolCalls: ToolCall[] = [];
       let buffer = ''; // Buffer for incomplete lines
       let currentAgent = '';
-      let agentContents: { [agent: string]: string } = {};
+      let agentBlocks: AgentBlock[] = [];
+      let currentAgentIndex = -1;
+      let hasContentInCurrentAgent = false;
 
       if (reader) {
         while (true) {
@@ -183,33 +185,64 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                 console.log('Parsed stream data:', data.type, data.agent_name || '', data.toolCall?.status || data.agentCall || '');
                 
                 if (data.type === 'agent_start' && data.agent_name) {
-                  currentAgent = data.agent_name.trim();
-                  if (!agentContents[currentAgent]) {
-                    agentContents[currentAgent] = '';
-                  }
+                  const agentName = data.agent_name.trim();
+                  currentAgent = agentName;
+                  hasContentInCurrentAgent = false;
                   console.log('Agent started:', currentAgent);
                 } else if (data.type === 'agent_end' && data.agent_name) {
                   const endingAgent = data.agent_name.trim();
                   console.log('Agent ended:', endingAgent);
                 } else if (data.type === 'content' && data.content) {
+                  // 检查 agent 名称是否变化（在有内容输出的情况下）
+                  const streamAgentName = data.agent_name ? data.agent_name.trim() : currentAgent;
+                  
+                  if (streamAgentName && streamAgentName !== currentAgent && hasContentInCurrentAgent) {
+                    // Agent 名称发生变化且之前有内容输出，创建新的 agent 块
+                    currentAgent = streamAgentName;
+                    currentAgentIndex = -1; // 重置索引，会在下面创建新块
+                    hasContentInCurrentAgent = false;
+                    console.log('Agent changed during content stream to:', currentAgent);
+                  }
+                  
                   if (currentAgent) {
-                    // Add content to current agent's content
-                    agentContents[currentAgent] = (agentContents[currentAgent] || '') + data.content;
+                    // 标记当前 agent 有内容输出
+                    hasContentInCurrentAgent = true;
                     
-                    // Build full content with agent separation
-                    const agentEntries = Object.entries(agentContents).filter(([agent, content]) => content.trim());
-                    if (agentEntries.length > 1) {
-                      fullContent = agentEntries
-                        .map(([agent, content]) => `**[${agent}]**\n\n${content}`)
-                        .join('\n\n---\n\n');
-                    } else if (agentEntries.length === 1) {
-                      fullContent = agentEntries[0][1];
+                    // 找到或创建当前 agent 的块
+                    if (currentAgentIndex === -1) {
+                      // 查找是否已存在该 agent 的块
+                      const existingIndex = agentBlocks.findIndex(block => block.agentName === currentAgent);
+                      if (existingIndex !== -1) {
+                        currentAgentIndex = existingIndex;
+                      } else {
+                        // 创建新的 agent 块
+                        agentBlocks.push({
+                          agentName: currentAgent,
+                          content: ''
+                        });
+                        currentAgentIndex = agentBlocks.length - 1;
+                      }
                     }
+                    
+                    // 添加内容到当前 agent 块
+                    agentBlocks[currentAgentIndex].content += data.content;
+                    
+                    // 构建完整内容用于显示
+                    fullContent = agentBlocks.map(block => block.content).join('\n\n');
                   } else {
-                    // Fallback for content without agent context
+                    // 没有 agent 上下文的回退处理
                     fullContent += data.content;
                   }
-                  onStreamUpdate(fullContent);
+                  
+                  // 更新消息，包含 agent 块信息
+                  if (currentThreadId) {
+                    updateMessage(currentThreadId, messageId, {
+                      content: fullContent,
+                      toolCalls: [...toolCalls],
+                      agentBlocks: [...agentBlocks],
+                      currentAgent: currentAgent
+                    });
+                  }
                 } else if (data.type === 'tool_call' && data.toolCall) {
                   const toolCall = data.toolCall;
                   let args = {};
@@ -252,6 +285,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                     updateMessage(currentThreadId, messageId, {
                       content: fullContent,
                       toolCalls: [...toolCalls],
+                      agentBlocks: [...agentBlocks],
                       currentAgent: currentAgent
                     });
                   }
@@ -277,6 +311,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                       content: fullContent,
                       toolCalls: [...toolCalls],
                       agentCalls: [...existingAgentCalls, agentCall],
+                      agentBlocks: [...agentBlocks],
                       currentAgent: agentCall.to_agent
                     });
                   }
@@ -308,6 +343,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
         updateMessage(currentThreadId, messageId, {
           content: fullContent || 'No response from server',
           toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+          agentBlocks: agentBlocks.length > 0 ? agentBlocks : undefined,
         });
       }
     } catch (error) {
