@@ -41,24 +41,24 @@ export function ToolCallDisplay({ toolCalls, className }: ToolCallDisplayProps) 
   };
 
   return (
-    <div className={cn("space-y-3", className)}>
+    <div className={cn("space-y-3 w-full", className)}>
       {toolCalls.map((toolCall) => (
-        <Card key={toolCall.id} className="overflow-hidden bg-card/50 border-border/50">
+        <Card key={toolCall.id} className="overflow-hidden bg-card/50 border-border/50 w-full max-w-4xl">
           <Collapsible defaultOpen={false}>
             <CollapsibleTrigger className="w-full">
-              <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <Wrench className="w-4 h-4 text-chat-tool-call" />
-                  <span className="font-medium text-sm">{toolCall.name}</span>
+              <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors w-full">
+                <div className="flex items-center gap-3 flex-1">
+                  <Wrench className="w-4 h-4 text-chat-tool-call flex-shrink-0" />
+                  <span className="font-medium text-sm text-left">{toolCall.name}</span>
                   <Badge 
                     variant="outline" 
-                    className={cn("text-xs", getStatusColor(toolCall.status))}
+                    className={cn("text-xs flex-shrink-0", getStatusColor(toolCall.status))}
                   >
                     {getStatusIcon(toolCall.status)}
                     <span className="ml-1 capitalize">{toolCall.status}</span>
                   </Badge>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-shrink-0">
                   <ChevronDown className="w-4 h-4 text-muted-foreground transform transition-transform group-data-[state=open]:rotate-180" />
                 </div>
               </div>
@@ -73,8 +73,8 @@ export function ToolCallDisplay({ toolCalls, className }: ToolCallDisplayProps) 
                       <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                         Arguments
                       </h4>
-                      <div className="bg-muted/30 rounded-md p-3">
-                        <pre className="text-xs text-muted-foreground overflow-x-auto">
+                      <div className="bg-muted/30 rounded-md p-3 w-full">
+                        <pre className="text-xs text-muted-foreground overflow-x-auto whitespace-pre-wrap break-words">
                           {JSON.stringify(toolCall.args, null, 2)}
                         </pre>
                       </div>
@@ -87,8 +87,8 @@ export function ToolCallDisplay({ toolCalls, className }: ToolCallDisplayProps) 
                       <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                         Result
                       </h4>
-                      <div className="bg-chat-tool-result/10 border border-chat-tool-result/20 rounded-md p-3">
-                        <pre className="text-xs text-chat-tool-result overflow-x-auto whitespace-pre-wrap">
+                      <div className="bg-chat-tool-result/10 border border-chat-tool-result/20 rounded-md p-3 w-full min-h-[100px]">
+                        <pre className="text-xs text-chat-tool-result overflow-x-auto whitespace-pre-wrap break-words">
                           {typeof toolCall.result === 'string' 
                             ? toolCall.result 
                             : JSON.stringify(toolCall.result, null, 2)

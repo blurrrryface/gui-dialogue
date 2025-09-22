@@ -1,6 +1,7 @@
 import React from 'react';
 import { ChatMessage } from '@/store/chatStore';
 import { ToolCallDisplay } from './ToolCallDisplay';
+import { AgentMessageDisplay } from './AgentMessageDisplay';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { User, Bot, Wrench } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -10,12 +11,14 @@ import remarkGfm from 'remark-gfm';
 interface MessageBubbleProps {
   message: ChatMessage;
   className?: string;
+  isLatestAgent?: boolean;
 }
 
-export function MessageBubble({ message, className }: MessageBubbleProps) {
+export function MessageBubble({ message, className, isLatestAgent = false }: MessageBubbleProps) {
   const isUser = message.role === 'user';
   const isAssistant = message.role === 'assistant';
   const isToolCall = message.toolCalls && message.toolCalls.length > 0 && !message.content.trim();
+  const isAgentMessage = message.currentAgent && message.content.trim();
 
   return (
     <div className={cn(
@@ -34,7 +37,8 @@ export function MessageBubble({ message, className }: MessageBubbleProps) {
 
       {/* Message Content */}
       <div className={cn(
-        "max-w-3xl space-y-3",
+        isToolCall ? "w-full max-w-4xl" : "max-w-3xl",
+        "space-y-3",
         isUser ? "order-first" : ""
       )}>
         {/* Current Agent Indicator */}
@@ -54,8 +58,15 @@ export function MessageBubble({ message, className }: MessageBubbleProps) {
         {/* Tool Calls - 优先显示工具调用 */}
         {message.toolCalls && message.toolCalls.length > 0 ? (
           <ToolCallDisplay toolCalls={message.toolCalls} />
+        ) : isAgentMessage && message.currentAgent ? (
+          /* Agent Message - 使用可折叠的组件 */
+          <AgentMessageDisplay 
+            agentName={message.currentAgent} 
+            content={message.content}
+            isLatest={isLatestAgent}
+          />
         ) : (
-          /* Text Content - 只在没有工具调用时显示文本内容 */
+          /* Text Content - 普通文本内容 */
           message.content.trim() && (
             <div className={cn(
               "rounded-2xl px-4 py-3 text-sm",

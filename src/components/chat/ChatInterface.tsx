@@ -554,6 +554,9 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                 // 渲染所有项目
                 allItems.forEach((item, itemIndex) => {
                   if (item.type === 'agent') {
+                    const isLastAgent = itemIndex === allItems.length - 1 || 
+                      (itemIndex === allItems.length - 2 && allItems[allItems.length - 1].type === 'tool');
+                    
                     const agentMessage: ChatMessage = {
                       ...message,
                       id: `${message.id}_agent_${itemIndex}`,
@@ -566,7 +569,8 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                     messageItems.push(
                       <MessageBubble 
                         key={agentMessage.id} 
-                        message={agentMessage} 
+                        message={agentMessage}
+                        isLatestAgent={isLastAgent}
                       />
                     );
                   } else if (item.type === 'tool') {
