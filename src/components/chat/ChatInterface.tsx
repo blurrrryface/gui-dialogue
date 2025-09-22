@@ -158,6 +158,8 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
       let fullContent = '';
       let toolCalls: ToolCall[] = [];
       let buffer = ''; // Buffer for incomplete lines
+      let currentAgent = '';
+      let agentContents: { [agent: string]: string } = {};
 
       if (reader) {
         while (true) {
@@ -178,10 +180,35 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                 if (jsonStr === '') continue; // Skip empty data lines
                 
                 const data = JSON.parse(jsonStr);
-                console.log('Parsed stream data:', data.type, data.toolCall?.status || data.agentCall || '');
+                console.log('Parsed stream data:', data.type, data.agent_name || '', data.toolCall?.status || data.agentCall || '');
                 
-                if (data.type === 'content' && data.content) {
-                  fullContent += data.content;
+                if (data.type === 'agent_start' && data.agent_name) {
+                  currentAgent = data.agent_name.trim();
+                  if (!agentContents[currentAgent]) {
+                    agentContents[currentAgent] = '';
+                  }
+                  console.log('Agent started:', currentAgent);
+                } else if (data.type === 'agent_end' && data.agent_name) {
+                  const endingAgent = data.agent_name.trim();
+                  console.log('Agent ended:', endingAgent);
+                } else if (data.type === 'content' && data.content) {
+                  if (currentAgent) {
+                    // Add content to current agent's content
+                    agentContents[currentAgent] = (agentContents[currentAgent] || '') + data.content;
+                    
+                    // Build full content with agent separation
+                    const agentEntries = Object.entries(agentContents).filter(([agent, content]) => content.trim());
+                    if (agentEntries.length > 1) {
+                      fullContent = agentEntries
+                        .map(([agent, content]) => `**[${agent}]**\n\n${content}`)
+                        .join('\n\n---\n\n');
+                    } else if (agentEntries.length === 1) {
+                      fullContent = agentEntries[0][1];
+                    }
+                  } else {
+                    // Fallback for content without agent context
+                    fullContent += data.content;
+                  }
                   onStreamUpdate(fullContent);
                 } else if (data.type === 'tool_call' && data.toolCall) {
                   const toolCall = data.toolCall;
@@ -224,7 +251,8 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                   if (currentThreadId) {
                     updateMessage(currentThreadId, messageId, {
                       content: fullContent,
-                      toolCalls: [...toolCalls]
+                      toolCalls: [...toolCalls],
+                      currentAgent: currentAgent
                     });
                   }
                 } else if (data.type === 'agent_call' && data.agentCall) {

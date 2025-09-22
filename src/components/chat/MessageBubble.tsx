@@ -36,6 +36,13 @@ export function MessageBubble({ message, className }: MessageBubbleProps) {
         "max-w-3xl space-y-3",
         isUser ? "order-first" : ""
       )}>
+        {/* Current Agent Indicator */}
+        {isAssistant && message.currentAgent && (
+          <div className="mb-2 text-xs text-blue-600 dark:text-blue-400 font-medium">
+            当前代理: {message.currentAgent}
+          </div>
+        )}
+
         {/* Text Content */}
         <div className={cn(
           "rounded-2xl px-4 py-3 text-sm",
