@@ -163,6 +163,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
       let agentBlocks: AgentBlock[] = [];
       let currentAgentIndex = -1;
       let hasContentInCurrentAgent = false;
+      let eventTimestamp = 0; // 用于记录事件发生的顺序
 
       if (reader) {
         while (true) {
@@ -184,6 +185,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                 
                 const data = JSON.parse(jsonStr);
                 console.log('Parsed stream data:', data.type, data.agent_name || '', data.toolCall?.status || data.agentCall || '');
+                eventTimestamp++; // 每个事件递增时间戳
                 
                 if (data.type === 'agent_start' && data.agent_name) {
                   const agentName = data.agent_name.trim();
@@ -214,7 +216,8 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                       // 总是创建新的 agent 块（不重用之前的块）
                       agentBlocks.push({
                         agentName: currentAgent,
-                        content: ''
+                        content: '',
+                        timestamp: eventTimestamp
                       });
                       currentAgentIndex = agentBlocks.length - 1;
                       console.log('Created new agent block for:', currentAgent, 'index:', currentAgentIndex);
@@ -262,7 +265,8 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                     name: toolCall.name || 'unknown_tool',
                     args: args,
                     result: toolCall.result,
-                    status: toolCall.status || (toolCall.result ? 'completed' : 'pending')
+                    status: toolCall.status || (toolCall.result ? 'completed' : 'pending'),
+                    timestamp: eventTimestamp
                   };
                   
                   console.log('Tool call update:', toolCallData.name, toolCallData.status, 
@@ -511,41 +515,41 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
             </div>
           ) : (
             messages.map((message) => {
-              // 如果是助手消息且有 agent 块或工具调用，需要按顺序渲染
+              // 如果是助手消息且有 agent 块或工具调用，需要按时间戳顺序渲染
               if (message.role === 'assistant' && (message.agentBlocks?.length || message.toolCalls?.length)) {
                 const messageItems = [];
                 
-                // 创建一个包含所有内容的数组，按顺序排列
+                // 创建一个包含所有内容的数组，按时间戳排序
                 const allItems: Array<{
                   type: 'agent' | 'tool';
                   data: any;
-                  order: number;
+                  timestamp: number;
                 }> = [];
                 
                 // 添加 agent 块
                 if (message.agentBlocks) {
-                  message.agentBlocks.forEach((agentBlock, index) => {
+                  message.agentBlocks.forEach((agentBlock) => {
                     allItems.push({
                       type: 'agent',
                       data: agentBlock,
-                      order: index * 2 // agent 块的顺序
+                      timestamp: agentBlock.timestamp || 0
                     });
                   });
                 }
                 
                 // 添加工具调用
                 if (message.toolCalls) {
-                  message.toolCalls.forEach((toolCall, index) => {
+                  message.toolCalls.forEach((toolCall) => {
                     allItems.push({
                       type: 'tool',
                       data: toolCall,
-                      order: (message.agentBlocks?.length || 0) * 2 + index * 2 + 1 // 工具调用在 agent 块之后
+                      timestamp: toolCall.timestamp || 0
                     });
                   });
                 }
                 
-                // 按顺序排序
-                allItems.sort((a, b) => a.order - b.order);
+                // 按时间戳排序
+                allItems.sort((a, b) => a.timestamp - b.timestamp);
                 
                 // 渲染所有项目
                 allItems.forEach((item, itemIndex) => {

@@ -4,6 +4,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 export interface AgentBlock {
   agentName: string;
   content: string;
+  timestamp?: number;
 }
 
 export interface ChatMessage {
@@ -33,6 +34,7 @@ export interface ToolCall {
   args: Record<string, any>;
   result?: any;
   status: 'pending' | 'completed' | 'error';
+  timestamp?: number;
 }
 
 export interface AgentCall {
