@@ -499,7 +499,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   const messages = currentThread?.messages || [];
 
   return (
-    <div className="flex flex-col h-full bg-background overflow-hidden">
+    <div className="flex flex-col h-full bg-background">
       {/* Messages */}
       <ScrollArea className="flex-1 min-h-0 p-4">
         <div className="space-y-4 pb-4">
@@ -517,7 +517,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
             messages.map((message) => {
               // 如果是助手消息且有 agent 块或工具调用，需要按时间戳顺序渲染
               if (message.role === 'assistant' && (message.agentBlocks?.length || message.toolCalls?.length)) {
-                const messageItems: JSX.Element[] = [];
+                const messageItems = [];
                 
                 // 创建一个包含所有内容的数组，按时间戳排序
                 const allItems: Array<{
@@ -527,21 +527,18 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                 }> = [];
                 
                 // 添加 agent 块
-                if (message.agentBlocks && message.agentBlocks.length > 0) {
+                if (message.agentBlocks) {
                   message.agentBlocks.forEach((agentBlock) => {
-                    // 只添加有内容的 agent 块
-                    if (agentBlock.content && agentBlock.content.trim()) {
-                      allItems.push({
-                        type: 'agent',
-                        data: agentBlock,
-                        timestamp: agentBlock.timestamp || 0
-                      });
-                    }
+                    allItems.push({
+                      type: 'agent',
+                      data: agentBlock,
+                      timestamp: agentBlock.timestamp || 0
+                    });
                   });
                 }
                 
                 // 添加工具调用
-                if (message.toolCalls && message.toolCalls.length > 0) {
+                if (message.toolCalls) {
                   message.toolCalls.forEach((toolCall) => {
                     allItems.push({
                       type: 'tool',
@@ -551,26 +548,18 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                   });
                 }
                 
-                // 如果没有有效的内容项，返回空（不渲染）
-                if (allItems.length === 0) {
-                  return null;
-                }
-                
                 // 按时间戳排序
                 allItems.sort((a, b) => a.timestamp - b.timestamp);
                 
-                // 渲染所有项目，合并连续的工具调用
-                let i = 0;
-                while (i < allItems.length) {
-                  const item = allItems[i];
-                  
+                // 渲染所有项目
+                allItems.forEach((item, itemIndex) => {
                   if (item.type === 'agent') {
-                    const isLastAgent = i === allItems.length - 1 || 
-                      (i < allItems.length - 1 && allItems.slice(i + 1).every(nextItem => nextItem.type === 'tool'));
+                    const isLastAgent = itemIndex === allItems.length - 1 || 
+                      (itemIndex === allItems.length - 2 && allItems[allItems.length - 1].type === 'tool');
                     
                     const agentMessage: ChatMessage = {
                       ...message,
-                      id: `${message.id}_agent_${i}`,
+                      id: `${message.id}_agent_${itemIndex}`,
                       content: item.data.content,
                       currentAgent: item.data.agentName,
                       agentBlocks: undefined,
@@ -584,23 +573,13 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                         isLatestAgent={isLastAgent}
                       />
                     );
-                    i++;
                   } else if (item.type === 'tool') {
-                    // 收集连续的工具调用
-                    const consecutiveTools: ToolCall[] = [];
-                    let j = i;
-                    while (j < allItems.length && allItems[j].type === 'tool') {
-                      consecutiveTools.push(allItems[j].data);
-                      j++;
-                    }
-                    
-                    // 创建一个包含所有连续工具调用的消息
                     const toolMessage: ChatMessage = {
                       ...message,
-                      id: `${message.id}_tools_${i}`,
+                      id: `${message.id}_tool_${itemIndex}`,
                       content: '',
                       agentBlocks: undefined,
-                      toolCalls: consecutiveTools,
+                      toolCalls: [item.data],
                       currentAgent: undefined,
                     };
                     
@@ -610,10 +589,8 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                         message={toolMessage} 
                       />
                     );
-                    
-                    i = j; // 跳过已处理的工具调用
                   }
-                }
+                });
                 
                 return messageItems;
               } else {
@@ -625,7 +602,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                   />
                 );
               }
-            }).flat().filter(Boolean)
+            }).flat()
           )}
 
           {/* Loading indicator */}

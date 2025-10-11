@@ -73,8 +73,9 @@ export function MessageBubble({ message, className, isLatestAgent = false }: Mes
 
       {/* Message Content */}
       <div className={cn(
+        isToolCall ? "w-full max-w-4xl" : "max-w-3xl",
         "space-y-3",
-        isUser ? "max-w-xl order-first" : "max-w-3xl flex-1 min-w-0"
+        isUser ? "order-first" : ""
       )}>
         {/* Current Agent Indicator */}
         {isAssistant && message.currentAgent && (
