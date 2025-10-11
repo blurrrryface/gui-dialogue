@@ -15,6 +15,41 @@ interface MessageBubbleProps {
   isLatestAgent?: boolean;
 }
 
+// 预处理markdown内容，确保表格前后有空行
+const preprocessMarkdown = (content: string): string => {
+  // 匹配markdown表格（以|开头的行）
+  const lines = content.split('\n');
+  const processedLines: string[] = [];
+  
+  for (let i = 0; i < lines.length; i++) {
+    const currentLine = lines[i];
+    const prevLine = i > 0 ? lines[i - 1] : '';
+    const nextLine = i < lines.length - 1 ? lines[i + 1] : '';
+    
+    // 检测表格行（以|开头或包含|的行）
+    const isTableLine = currentLine.trim().startsWith('|') || 
+                        (currentLine.includes('|') && currentLine.includes('-'));
+    const isPrevTableLine = prevLine.trim().startsWith('|') || 
+                           (prevLine.includes('|') && prevLine.includes('-'));
+    const isNextTableLine = nextLine.trim().startsWith('|') || 
+                           (nextLine.includes('|') && nextLine.includes('-'));
+    
+    // 如果当前行是表格行，但前一行不是表格行且不为空，添加空行
+    if (isTableLine && !isPrevTableLine && prevLine.trim() !== '') {
+      processedLines.push('');
+    }
+    
+    processedLines.push(currentLine);
+    
+    // 如果当前行是表格行，但下一行不是表格行且不为空，添加空行
+    if (isTableLine && !isNextTableLine && nextLine.trim() !== '') {
+      processedLines.push('');
+    }
+  }
+  
+  return processedLines.join('\n');
+};
+
 export function MessageBubble({ message, className, isLatestAgent = false }: MessageBubbleProps) {
   const isUser = message.role === 'user';
   const isAssistant = message.role === 'assistant';
@@ -115,21 +150,33 @@ export function MessageBubble({ message, className, isLatestAgent = false }: Mes
                       
                       // Tables
                       table: ({ children }) => (
-                        <div className="my-4 overflow-x-auto rounded-md border border-border">
+                        <div className="my-4 overflow-x-auto rounded-lg border-2 border-primary/20 bg-muted/30">
                           <Table>
                             {children}
                           </Table>
                         </div>
                       ),
-                      thead: ({ children }) => <TableHeader>{children}</TableHeader>,
+                      thead: ({ children }) => (
+                        <TableHeader className="bg-primary/10">
+                          {children}
+                        </TableHeader>
+                      ),
                       tbody: ({ children }) => <TableBody>{children}</TableBody>,
-                      tr: ({ children }) => <TableRow>{children}</TableRow>,
+                      tr: ({ children }) => (
+                        <TableRow className="border-b border-border/50 hover:bg-muted/50">
+                          {children}
+                        </TableRow>
+                      ),
                       th: ({ children }) => (
-                        <TableHead className="font-semibold text-foreground">
+                        <TableHead className="font-bold text-foreground bg-primary/5 border-r border-border/30 last:border-r-0 px-4 py-3">
                           {children}
                         </TableHead>
                       ),
-                      td: ({ children }) => <TableCell>{children}</TableCell>,
+                      td: ({ children }) => (
+                        <TableCell className="border-r border-border/20 last:border-r-0 px-4 py-2">
+                          {children}
+                        </TableCell>
+                      ),
                       
                       // Blockquote
                       blockquote: ({ children }) => (
@@ -154,13 +201,13 @@ export function MessageBubble({ message, className, isLatestAgent = false }: Mes
                       ),
                       
                       // Strong/Bold
-                      strong: ({ children }) => <strong className="font-bold">{children}</strong>,
+                      strong: ({ children }) => <strong className="font-bold text-foreground">{children}</strong>,
                       
                       // Emphasis/Italic
                       em: ({ children }) => <em className="italic">{children}</em>,
                     }}
                   >
-                    {message.content}
+                    {preprocessMarkdown(message.content)}
                   </ReactMarkdown>
                 </div>
               ) : (
