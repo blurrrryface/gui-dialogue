@@ -499,7 +499,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   const messages = currentThread?.messages || [];
 
   return (
-    <div className="flex flex-col h-full bg-background">
+    <div className="flex flex-col h-full bg-background overflow-hidden">
       {/* Messages */}
       <ScrollArea className="flex-1 min-h-0 p-4">
         <div className="space-y-4 pb-4">
