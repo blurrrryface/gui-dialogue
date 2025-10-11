@@ -551,52 +551,11 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                 // 按时间戳排序
                 allItems.sort((a, b) => a.timestamp - b.timestamp);
                 
-                // 合并连续的工具调用
-                const groupedItems: Array<{
-                  type: 'agent' | 'tools';
-                  data: any;
-                  timestamp: number;
-                }> = [];
-                
-                let currentToolGroup: any[] = [];
-                
-                allItems.forEach((item, index) => {
-                  if (item.type === 'tool') {
-                    // 添加到当前工具组
-                    currentToolGroup.push(item.data);
-                  } else {
-                    // 遇到非工具项，先处理之前的工具组
-                    if (currentToolGroup.length > 0) {
-                      groupedItems.push({
-                        type: 'tools',
-                        data: currentToolGroup,
-                        timestamp: currentToolGroup[0].timestamp || 0
-                      });
-                      currentToolGroup = [];
-                    }
-                    // 添加当前agent项
-                    groupedItems.push({
-                      type: 'agent',
-                      data: item.data,
-                      timestamp: item.timestamp
-                    });
-                  }
-                });
-                
-                // 处理最后的工具组
-                if (currentToolGroup.length > 0) {
-                  groupedItems.push({
-                    type: 'tools',
-                    data: currentToolGroup,
-                    timestamp: currentToolGroup[0].timestamp || 0
-                  });
-                }
-                
-                // 渲染分组后的项目
-                groupedItems.forEach((item, itemIndex) => {
+                // 渲染所有项目
+                allItems.forEach((item, itemIndex) => {
                   if (item.type === 'agent') {
-                    const isLastAgent = itemIndex === groupedItems.length - 1 || 
-                      (itemIndex === groupedItems.length - 2 && groupedItems[groupedItems.length - 1].type === 'tools');
+                    const isLastAgent = itemIndex === allItems.length - 1 || 
+                      (itemIndex === allItems.length - 2 && allItems[allItems.length - 1].type === 'tool');
                     
                     const agentMessage: ChatMessage = {
                       ...message,
@@ -614,14 +573,13 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                         isLatestAgent={isLastAgent}
                       />
                     );
-                  } else if (item.type === 'tools') {
-                    // 合并的工具调用组
+                  } else if (item.type === 'tool') {
                     const toolMessage: ChatMessage = {
                       ...message,
-                      id: `${message.id}_tools_${itemIndex}`,
+                      id: `${message.id}_tool_${itemIndex}`,
                       content: '',
                       agentBlocks: undefined,
-                      toolCalls: item.data, // 传入所有工具调用
+                      toolCalls: [item.data],
                       currentAgent: undefined,
                     };
                     
