@@ -7,6 +7,7 @@ import { User, Bot, Wrench } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -79,24 +80,84 @@ export function MessageBubble({ message, className, isLatestAgent = false }: Mes
                   <ReactMarkdown 
                     remarkPlugins={[remarkGfm]}
                     components={{
-                      // Custom components for better styling
-                      p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-                      code: ({ children, ...props }) => {
-                        // Check if it's inline code by looking at the parent
-                        const isInline = !props.className?.includes('language-');
+                      // Paragraphs
+                      p: ({ children }) => <p className="mb-3 last:mb-0 leading-relaxed">{children}</p>,
+                      
+                      // Headings
+                      h1: ({ children }) => <h1 className="text-xl font-bold mb-3 mt-4 first:mt-0">{children}</h1>,
+                      h2: ({ children }) => <h2 className="text-lg font-bold mb-2 mt-3">{children}</h2>,
+                      h3: ({ children }) => <h3 className="text-base font-bold mb-2 mt-3">{children}</h3>,
+                      h4: ({ children }) => <h4 className="text-sm font-bold mb-2 mt-2">{children}</h4>,
+                      
+                      // Code blocks
+                      code: ({ children, className, ...props }) => {
+                        const isInline = !className?.includes('language-');
                         return isInline ? (
-                          <code className="bg-muted px-1 py-0.5 rounded text-xs" {...props}>
+                          <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono" {...props}>
                             {children}
                           </code>
                         ) : (
-                          <pre className="bg-muted p-3 rounded-md overflow-x-auto">
-                            <code {...props}>{children}</code>
-                          </pre>
+                          <code className="text-xs font-mono" {...props}>
+                            {children}
+                          </code>
                         );
                       },
-                      ul: ({ children }) => <ul className="list-disc pl-4 mb-2">{children}</ul>,
-                      ol: ({ children }) => <ol className="list-decimal pl-4 mb-2">{children}</ol>,
-                      li: ({ children }) => <li className="mb-1">{children}</li>,
+                      pre: ({ children }) => (
+                        <pre className="bg-muted p-3 rounded-md overflow-x-auto mb-3 mt-2">
+                          {children}
+                        </pre>
+                      ),
+                      
+                      // Lists
+                      ul: ({ children }) => <ul className="list-disc pl-5 mb-3 space-y-1">{children}</ul>,
+                      ol: ({ children }) => <ol className="list-decimal pl-5 mb-3 space-y-1">{children}</ol>,
+                      li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+                      
+                      // Tables
+                      table: ({ children }) => (
+                        <div className="my-4 overflow-x-auto rounded-md border border-border">
+                          <Table>
+                            {children}
+                          </Table>
+                        </div>
+                      ),
+                      thead: ({ children }) => <TableHeader>{children}</TableHeader>,
+                      tbody: ({ children }) => <TableBody>{children}</TableBody>,
+                      tr: ({ children }) => <TableRow>{children}</TableRow>,
+                      th: ({ children }) => (
+                        <TableHead className="font-semibold text-foreground">
+                          {children}
+                        </TableHead>
+                      ),
+                      td: ({ children }) => <TableCell>{children}</TableCell>,
+                      
+                      // Blockquote
+                      blockquote: ({ children }) => (
+                        <blockquote className="border-l-4 border-primary/30 pl-4 italic my-3 text-muted-foreground">
+                          {children}
+                        </blockquote>
+                      ),
+                      
+                      // Horizontal rule
+                      hr: () => <hr className="my-4 border-border" />,
+                      
+                      // Links
+                      a: ({ children, href }) => (
+                        <a 
+                          href={href} 
+                          className="text-primary hover:underline" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                        >
+                          {children}
+                        </a>
+                      ),
+                      
+                      // Strong/Bold
+                      strong: ({ children }) => <strong className="font-bold">{children}</strong>,
+                      
+                      // Emphasis/Italic
+                      em: ({ children }) => <em className="italic">{children}</em>,
                     }}
                   >
                     {message.content}
