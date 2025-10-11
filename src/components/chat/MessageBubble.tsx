@@ -76,14 +76,7 @@ export function MessageBubble({ message, className, isLatestAgent = false }: Mes
         "min-w-0 space-y-3",
         isUser ? "order-first max-w-[85%]" : "flex-1 max-w-[90%]"
       )}>
-        {/* Current Agent Indicator */}
-        {isAssistant && message.currentAgent && (
-          <div className="mb-2 px-2 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium inline-block">
-            {message.currentAgent}
-          </div>
-        )}
-        
-        {/* Tool Call Indicator */}
+        {/* Tool Call Indicator - 只在纯工具调用时显示 */}
         {isToolCall && (
           <div className="mb-2 px-2 py-1 bg-orange-500/10 text-orange-500 rounded-full text-xs font-medium inline-block">
             工具调用
