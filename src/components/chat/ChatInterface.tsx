@@ -517,7 +517,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
             messages.map((message) => {
               // 如果是助手消息且有 agent 块或工具调用，需要按时间戳顺序渲染
               if (message.role === 'assistant' && (message.agentBlocks?.length || message.toolCalls?.length)) {
-                const messageItems = [];
+                const messageItems: JSX.Element[] = [];
                 
                 // 创建一个包含所有内容的数组，按时间戳排序
                 const allItems: Array<{
@@ -527,18 +527,21 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                 }> = [];
                 
                 // 添加 agent 块
-                if (message.agentBlocks) {
+                if (message.agentBlocks && message.agentBlocks.length > 0) {
                   message.agentBlocks.forEach((agentBlock) => {
-                    allItems.push({
-                      type: 'agent',
-                      data: agentBlock,
-                      timestamp: agentBlock.timestamp || 0
-                    });
+                    // 只添加有内容的 agent 块
+                    if (agentBlock.content && agentBlock.content.trim()) {
+                      allItems.push({
+                        type: 'agent',
+                        data: agentBlock,
+                        timestamp: agentBlock.timestamp || 0
+                      });
+                    }
                   });
                 }
                 
                 // 添加工具调用
-                if (message.toolCalls) {
+                if (message.toolCalls && message.toolCalls.length > 0) {
                   message.toolCalls.forEach((toolCall) => {
                     allItems.push({
                       type: 'tool',
@@ -546,6 +549,11 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                       timestamp: toolCall.timestamp || 0
                     });
                   });
+                }
+                
+                // 如果没有有效的内容项，返回空（不渲染）
+                if (allItems.length === 0) {
+                  return null;
                 }
                 
                 // 按时间戳排序
@@ -617,7 +625,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                   />
                 );
               }
-            }).flat()
+            }).flat().filter(Boolean)
           )}
 
           {/* Loading indicator */}
