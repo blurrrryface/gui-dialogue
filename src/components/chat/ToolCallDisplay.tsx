@@ -41,9 +41,9 @@ export function ToolCallDisplay({ toolCalls, className }: ToolCallDisplayProps) 
   };
 
   return (
-    <div className={cn("space-y-3 w-full", className)}>
+    <div className={cn("space-y-3", className)}>
       {toolCalls.map((toolCall) => (
-        <Card key={toolCall.id} className="overflow-hidden bg-card/50 border-border/50 w-full max-w-4xl">
+        <Card key={toolCall.id} className="overflow-hidden bg-card/50 border-border/50">
           <Collapsible defaultOpen={false}>
             <CollapsibleTrigger className="w-full">
               <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors w-full">
