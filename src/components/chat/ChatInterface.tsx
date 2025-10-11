@@ -190,8 +190,9 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
                 if (data.type === 'agent_start' && data.agent_name) {
                   const agentName = data.agent_name.trim();
                   currentAgent = agentName;
+                  currentAgentIndex = -1; // 重置索引，强制创建新块
                   hasContentInCurrentAgent = false;
-                  console.log('Agent started:', currentAgent);
+                  console.log('Agent started:', currentAgent, 'reset index');
                 } else if (data.type === 'agent_end' && data.agent_name) {
                   const endingAgent = data.agent_name.trim();
                   console.log('Agent ended:', endingAgent);
