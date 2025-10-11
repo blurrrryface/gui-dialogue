@@ -58,13 +58,13 @@ export function MessageBubble({ message, className, isLatestAgent = false }: Mes
 
   return (
     <div className={cn(
-      "flex gap-4 p-4 animate-fade-in",
+      "flex gap-4 p-4 animate-fade-in min-w-0 overflow-hidden",
       isUser ? "justify-end" : "justify-start",
       className
     )}>
       {/* Avatar */}
       {!isUser && (
-        <Avatar className="w-8 h-8 bg-secondary">
+        <Avatar className="w-8 h-8 bg-secondary flex-shrink-0">
           <AvatarFallback>
             {isToolCall ? <Wrench className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
           </AvatarFallback>
@@ -73,8 +73,7 @@ export function MessageBubble({ message, className, isLatestAgent = false }: Mes
 
       {/* Message Content */}
       <div className={cn(
-        isToolCall ? "w-full max-w-4xl" : "max-w-3xl",
-        "space-y-3",
+        "flex-1 min-w-0 max-w-3xl space-y-3",
         isUser ? "order-first" : ""
       )}>
         {/* Current Agent Indicator */}
