@@ -50,6 +50,7 @@ export interface ChatThread {
   messages: ChatMessage[];
   createdAt: number;
   updatedAt: number;
+  backendThreadId?: string; // 后端线程ID
 }
 
 interface ChatState {
@@ -66,6 +67,7 @@ interface ChatState {
   updateMessage: (threadId: string, messageId: string, updates: Partial<ChatMessage>) => void;
   setLoading: (loading: boolean) => void;
   setGraphId: (graphId: string) => void; // 新增设置 graph_id 的方法
+  setBackendThreadId: (threadId: string, backendThreadId: string) => void; // 设置后端线程ID
   clearAllThreads: () => void;
 }
 
@@ -158,6 +160,16 @@ export const useChatStore = create<ChatState>()(
 
       setGraphId: (graphId: string) => {
         set({ graphId });
+      },
+
+      setBackendThreadId: (threadId: string, backendThreadId: string) => {
+        set((state) => ({
+          threads: state.threads.map(thread =>
+            thread.id === threadId
+              ? { ...thread, backendThreadId }
+              : thread
+          ),
+        }));
       },
 
       clearAllThreads: () => {

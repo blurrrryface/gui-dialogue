@@ -33,7 +33,8 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
     createThread, 
     addMessage, 
     updateMessage, 
-    setLoading 
+    setLoading,
+    setBackendThreadId 
   } = useChatStore();
   
   const currentThread = useCurrentThread();
@@ -381,12 +382,23 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
         setCurrentThreadId(threadId);
       }
 
+      // 获取当前thread
+      const currentThreadState = useChatStore.getState();
+      const thread = currentThreadState.threads.find(t => t.id === threadId);
+      
+      // 获取或创建后端thread ID
+      let backendThreadId = thread?.backendThreadId;
+      if (!backendThreadId) {
+        backendThreadId = await createThreadIfNeeded();
+        setBackendThreadId(threadId, backendThreadId);
+      }
+
       // 上传文件到服务器
       const uploadedAttachments: FileAttachment[] = [];
       for (const attachment of attachments) {
         if (attachment.file) {
           try {
-            const url = await uploadFileToServer(attachment.file, threadId);
+            const url = await uploadFileToServer(attachment.file, backendThreadId);
             uploadedAttachments.push({
               ...attachment,
               url: url,
@@ -419,15 +431,12 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
       });
 
       // 获取最新的助手消息ID
-      const currentThreadState = useChatStore.getState();
-      const updatedThread = currentThreadState.threads.find(t => t.id === threadId);
+      const updatedThreadState = useChatStore.getState();
+      const updatedThread = updatedThreadState.threads.find(t => t.id === threadId);
       const assistantMessage = updatedThread?.messages[updatedThread.messages.length - 1];
       
       if (assistantMessage) {
-        // 创建后端线程ID
-        const backendThreadId = await createThreadIfNeeded();
-        
-        // 调用API并流式更新
+        // 调用API并流式更新（使用已保存的后端thread ID）
         await callLangGraphAPI(trimmedInput, backendThreadId, assistantMessage.id, (content) => {
           updateMessage(threadId!, assistantMessage.id, { content });
         });
