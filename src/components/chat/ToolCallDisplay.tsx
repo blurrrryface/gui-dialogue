@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ToolCall } from '@/store/chatStore';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Loader2, CheckCircle, XCircle, Wrench, ChevronDown } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, Wrench, ChevronDown, ImageIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ToolCallDisplayProps {
@@ -13,6 +13,45 @@ interface ToolCallDisplayProps {
 
 export function ToolCallDisplay({ toolCalls, className }: ToolCallDisplayProps) {
   if (!toolCalls || toolCalls.length === 0) return null;
+
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+
+  const detectImagePaths = (result: any): string[] => {
+    if (!result) return [];
+    
+    // If result is a string, try to parse it as JSON
+    if (typeof result === 'string') {
+      try {
+        const parsed = JSON.parse(result);
+        return detectImagePaths(parsed);
+      } catch {
+        // Check if it's a single path
+        if (result.match(/\.(png|jpg|jpeg|gif|svg|webp)$/i)) {
+          return [result];
+        }
+        return [];
+      }
+    }
+    
+    // If it's an array, check each item
+    if (Array.isArray(result)) {
+      return result.filter(item => 
+        typeof item === 'string' && item.match(/\.(png|jpg|jpeg|gif|svg|webp)$/i)
+      );
+    }
+    
+    return [];
+  };
+
+  const getImageUrl = (path: string): string => {
+    // Extract the relative path from the full path
+    // e.g., /opt/SUPER_ML/langgraph_backend/output/... -> output/...
+    const match = path.match(/output\/(.+)/);
+    if (match) {
+      return `${BACKEND_URL}/output/${match[1]}`;
+    }
+    return path;
+  };
 
   const getStatusIcon = (status: ToolCall['status']) => {
     switch (status) {
@@ -87,14 +126,50 @@ export function ToolCallDisplay({ toolCalls, className }: ToolCallDisplayProps) 
                       <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                         Result
                       </h4>
-                      <div className="bg-chat-tool-result/10 border border-chat-tool-result/20 rounded-md p-3 min-h-[100px] overflow-hidden">
-                        <pre className="text-xs text-chat-tool-result overflow-x-auto whitespace-pre-wrap break-words">
-                          {typeof toolCall.result === 'string' 
-                            ? toolCall.result 
-                            : JSON.stringify(toolCall.result, null, 2)
-                          }
-                        </pre>
-                      </div>
+                      {(() => {
+                        const imagePaths = detectImagePaths(toolCall.result);
+                        
+                        return (
+                          <>
+                            {imagePaths.length > 0 && (
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                  <ImageIcon className="w-4 h-4" />
+                                  <span>{imagePaths.length} visualization{imagePaths.length > 1 ? 's' : ''} generated</span>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  {imagePaths.map((path, idx) => {
+                                    const fileName = path.split('/').pop() || `Image ${idx + 1}`;
+                                    return (
+                                      <div key={idx} className="space-y-2">
+                                        <p className="text-xs font-medium text-foreground">{fileName}</p>
+                                        <div className="border border-border rounded-md overflow-hidden bg-muted/20">
+                                          <img 
+                                            src={getImageUrl(path)} 
+                                            alt={fileName}
+                                            className="w-full h-auto"
+                                            onError={(e) => {
+                                              e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2Y1ZjVmNSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5JbWFnZSBub3QgYXZhaWxhYmxlPC90ZXh0Pjwvc3ZnPg==';
+                                            }}
+                                          />
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                            <div className="bg-chat-tool-result/10 border border-chat-tool-result/20 rounded-md p-3 min-h-[100px] overflow-hidden">
+                              <pre className="text-xs text-chat-tool-result overflow-x-auto whitespace-pre-wrap break-words">
+                                {typeof toolCall.result === 'string' 
+                                  ? toolCall.result 
+                                  : JSON.stringify(toolCall.result, null, 2)
+                                }
+                              </pre>
+                            </div>
+                          </>
+                        );
+                      })()}
                     </div>
                   )}
                 </div>
