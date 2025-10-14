@@ -77,7 +77,7 @@ export const useChatStore = create<ChatState>()(
       threads: [],
       currentThreadId: null,
       isLoading: false,
-      graphId: 'langgraph-app', // 默认 graph_id
+      graphId: 'chat-agent', // 默认 graph_id
 
       createThread: (title = 'New Chat') => {
         const newThread: ChatThread = {
