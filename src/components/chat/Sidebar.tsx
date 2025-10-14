@@ -12,11 +12,7 @@ interface SidebarProps {
 
 // 预定义的 Graph ID 选项
 const GRAPH_OPTIONS = [
-  { id: 'langgraph-app', name: 'LangGraph App', description: '默认应用' },
   { id: 'chat-agent', name: 'Chat Agent', description: '聊天代理' },
-  { id: 'rag-system', name: 'RAG System', description: '检索增强生成' },
-  { id: 'code-assistant', name: 'Code Assistant', description: '代码助手' },
-  { id: 'data-analyst', name: 'Data Analyst', description: '数据分析' },
 ];
 
 export function Sidebar({ className }: SidebarProps) {
