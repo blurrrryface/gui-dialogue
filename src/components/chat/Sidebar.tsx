@@ -100,8 +100,8 @@ export function Sidebar({ className }: SidebarProps) {
                 )}
                 onClick={() => selectThread(thread.id)}
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0 overflow-hidden">
                     <h3 className="text-sm font-medium text-foreground truncate">
                       {thread.title}
                     </h3>
@@ -115,7 +115,7 @@ export function Sidebar({ className }: SidebarProps) {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="w-6 h-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="w-6 h-6 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
                     onClick={(e) => handleDeleteThread(thread.id, e)}
                   >
                     <Trash2 className="w-3 h-3" />
