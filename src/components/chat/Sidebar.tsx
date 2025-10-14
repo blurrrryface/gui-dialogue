@@ -97,9 +97,9 @@ export function Sidebar({ className }: SidebarProps) {
                 onClick={() => selectThread(thread.id)}
               >
                 <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0 overflow-hidden">
-                    <h3 className="text-sm font-medium text-foreground truncate">
-                      {thread.title}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-medium text-foreground line-clamp-2 break-all">
+                      {thread.title.length > 50 ? thread.title.slice(0, 50) + '...' : thread.title}
                     </h3>
                     <p className="text-xs text-muted-foreground mt-1">
                       {formatDate(thread.updatedAt)}
@@ -111,10 +111,10 @@ export function Sidebar({ className }: SidebarProps) {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="w-6 h-6 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="w-8 h-8 flex-shrink-0 hover:bg-destructive/10 hover:text-destructive"
                     onClick={(e) => handleDeleteThread(thread.id, e)}
                   >
-                    <Trash2 className="w-3 h-3" />
+                    <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
