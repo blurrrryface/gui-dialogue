@@ -9,7 +9,6 @@ import { cn } from '@/lib/utils';
 import { useChatStore, useCurrentThread, ChatMessage, ToolCall, AgentCall, FileAttachment, AgentBlock } from '@/store/chatStore';
 import { getMockResponse, simulateStreamingResponse } from '@/services/mockData';
 import { MessageBubble } from './MessageBubble';
-import { PromptTemplates } from './PromptTemplates';
 
 interface ChatInterfaceProps {
   className?: string;
@@ -366,17 +365,11 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
     }
   };
 
-  const handleTemplateSelect = (templatePrompt: string) => {
-    setInput(templatePrompt);
-    textareaRef.current?.focus();
-  };
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if ((!input.trim() && attachments.length === 0) || isLoading) return;
 
-  const handleSubmit = async (e?: React.FormEvent, customInput?: string) => {
-    e?.preventDefault();
-    const messageText = customInput || input.trim();
-    if ((!messageText && attachments.length === 0) || isLoading) return;
-
-    const trimmedInput = messageText;
+    const trimmedInput = input.trim();
     setInput('');
     setIsLoading(true);
     setLoading(true);
@@ -521,8 +514,14 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
       <ScrollArea className="flex-1 min-h-0 p-4">
         <div className="space-y-4 pb-4">
           {messages.length === 0 ? (
-            <div className="flex items-center justify-center min-h-full py-8">
-              <PromptTemplates onSelectTemplate={handleTemplateSelect} />
+            <div className="flex items-center justify-center h-64">
+              <div className="text-center space-y-4">
+                <div className="text-4xl">💬</div>
+                <h3 className="text-lg font-medium">How can I help you today?</h3>
+                <p className="text-muted-foreground text-sm max-w-md">
+                  Start a conversation with your AI assistant powered by LangGraph.
+                </p>
+              </div>
             </div>
           ) : (
             messages.map((message) => {
