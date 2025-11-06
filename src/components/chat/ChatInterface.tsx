@@ -3,12 +3,13 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Send, Loader2, User, Bot, Wifi, WifiOff, ChevronDown, ChevronRight, Paperclip, X, FileText, Image } from 'lucide-react';
+import { Send, Loader2, User, Bot, Wifi, WifiOff, ChevronDown, ChevronRight, Paperclip, X, FileText, Image, Layout } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { useChatStore, useCurrentThread, ChatMessage, ToolCall, AgentCall, FileAttachment, AgentBlock } from '@/store/chatStore';
 import { getMockResponse, simulateStreamingResponse } from '@/services/mockData';
 import { MessageBubble } from './MessageBubble';
+import { PromptTemplateSelector } from './PromptTemplateSelector';
 
 interface ChatInterfaceProps {
   className?: string;
@@ -22,6 +23,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   const [currentThreadId, setCurrentThreadId] = useState<string | null>(null);
   const [isBackendAvailable, setIsBackendAvailable] = useState(true);
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
+  const [showTemplateSelector, setShowTemplateSelector] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -454,6 +456,11 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
     }
   };
 
+  const handleTemplateSelect = (prompt: string) => {
+    setInput(prompt);
+    textareaRef.current?.focus();
+  };
+
   // 文件附件组件
   const FileAttachmentItem = ({ attachment, showRemoveButton = false }: { 
     attachment: FileAttachment; 
@@ -679,71 +686,95 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
       </ScrollArea>
 
       {/* Input */}
-      <div className="border-t border-border p-4 flex-shrink-0">
-        {/* 附件预览 */}
-        {attachments.length > 0 && (
-          <div className="mb-3 space-y-2">
-            <div className="text-sm font-medium text-muted-foreground">
-              附件 ({attachments.length})
-            </div>
-            <div className="space-y-2 max-h-32 overflow-y-auto">
-              {attachments.map((attachment) => (
-                <FileAttachmentItem 
-                  key={attachment.id} 
-                  attachment={attachment} 
-                  showRemoveButton={true} 
-                />
-              ))}
-            </div>
+      <div className="border-t border-border flex-shrink-0">
+        {/* 模板选择器 */}
+        {showTemplateSelector && (
+          <div className="p-4 border-b">
+            <PromptTemplateSelector
+              onSelectTemplate={handleTemplateSelect}
+              onClose={() => setShowTemplateSelector(false)}
+            />
           </div>
         )}
-        
-        <div className="flex gap-2">
-          {/* 文件上传按钮 */}
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isLoading}
-            className="flex-shrink-0"
-          >
-            <Paperclip className="w-4 h-4" />
-          </Button>
+
+        <div className="p-4">
+          {/* 附件预览 */}
+          {attachments.length > 0 && (
+            <div className="mb-3 space-y-2">
+              <div className="text-sm font-medium text-muted-foreground">
+                附件 ({attachments.length})
+              </div>
+              <div className="space-y-2 max-h-32 overflow-y-auto">
+                {attachments.map((attachment) => (
+                  <FileAttachmentItem 
+                    key={attachment.id} 
+                    attachment={attachment} 
+                    showRemoveButton={true} 
+                  />
+                ))}
+              </div>
+            </div>
+          )}
           
-          {/* 隐藏的文件输入 */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept="*/*"
-            onChange={handleFileSelect}
-            className="hidden"
-          />
-          
-          <form onSubmit={handleSubmit} className="flex gap-2 flex-1">
-            <Textarea
-              ref={textareaRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Type your message..."
-              className="min-h-[60px] max-h-32 resize-none flex-1"
-              disabled={isLoading}
-            />
+          <div className="flex gap-2">
+            {/* 模板按钮 */}
             <Button
-              type="submit"
+              type="button"
+              variant="outline"
               size="icon"
-              disabled={(!input.trim() && attachments.length === 0) || isLoading}
-              className="w-12 h-12 bg-primary hover:bg-primary/90 flex-shrink-0"
+              onClick={() => setShowTemplateSelector(!showTemplateSelector)}
+              disabled={isLoading}
+              className="flex-shrink-0"
             >
-              {isLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Send className="w-4 h-4" />
-              )}
+              <Layout className="w-4 h-4" />
             </Button>
-          </form>
+
+            {/* 文件上传按钮 */}
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isLoading}
+              className="flex-shrink-0"
+            >
+              <Paperclip className="w-4 h-4" />
+            </Button>
+            
+            {/* 隐藏的文件输入 */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="*/*"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            
+            <form onSubmit={handleSubmit} className="flex gap-2 flex-1">
+              <Textarea
+                ref={textareaRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Type your message..."
+                className="min-h-[60px] max-h-32 resize-none flex-1"
+                disabled={isLoading}
+              />
+              <Button
+                type="submit"
+                size="icon"
+                disabled={(!input.trim() && attachments.length === 0) || isLoading}
+                className="w-12 h-12 bg-primary hover:bg-primary/90 flex-shrink-0"
+              >
+                {isLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Send className="w-4 h-4" />
+                )}
+              </Button>
+            </form>
+          </div>
         </div>
       </div>
     </div>
